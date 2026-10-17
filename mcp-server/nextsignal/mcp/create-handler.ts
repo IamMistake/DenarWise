@@ -13,7 +13,7 @@ export function createNextSignalMcpHandler() {
     },
     {
       serverInfo: {
-        name: "nextsignal-mcp-server",
+        name: "denarwise-mcp-server",
         version: "0.1.0"
       }
     },

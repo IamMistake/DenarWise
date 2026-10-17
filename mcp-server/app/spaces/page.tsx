@@ -53,7 +53,7 @@ export default async function SpacesPage({ searchParams }: SpacesPageProps) {
             <span className="editorial-brand-mark" aria-hidden="true">
               <Image src="/homespace-logo.png" alt="" width={46} height={46} priority />
             </span>
-            <span>HomeSpace</span>
+            <span>DenarWise</span>
           </a>
           <div className="editorial-nav-actions">
             <a className="editorial-nav-link" href="/">Home</a>

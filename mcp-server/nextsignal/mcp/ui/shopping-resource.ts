@@ -5,7 +5,7 @@ import {
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { shoppingAppHtml } from "@/nextsignal/mcp/ui/generated/shopping-app-html";
 
-export const SHOPPING_APP_URI = "ui://home-mcp/shopping-list.html";
+export const SHOPPING_APP_URI = "ui://denarwise/shopping-list.html";
 
 export function registerShoppingAppResource(server: McpServer) {
   registerAppResource(

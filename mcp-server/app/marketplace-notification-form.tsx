@@ -40,8 +40,8 @@ export function MarketplaceNotificationForm() {
       setState({
         kind: "success",
         message: payload?.data?.status === "already_subscribed"
-          ? "You’re already on the list. We’ll let you know when HomeSpace launches."
-          : "You’re on the list. We’ll email you as soon as HomeSpace is available."
+          ? "You’re already on the list. We’ll let you know when DenarWise launches."
+          : "You’re on the list. We’ll email you as soon as DenarWise is available."
       });
     } catch (error) {
       setState({

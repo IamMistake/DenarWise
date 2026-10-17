@@ -1,4 +1,4 @@
-# mcp-server
+# DenarWise MCP Server
 
 Generated with the NextSignal basic Next.js scaffold.
 
@@ -36,7 +36,7 @@ NEXTSIGNAL_WORKOS__COOKIEPASSWORD=generate_at_least_32_characters
 NEXTSIGNAL_WORKOS__REDIRECTURI=http://localhost:3000/callback
 NEXTSIGNAL_WORKOS__AUTHKITDOMAIN=https://your-subdomain.authkit.app
 NEXTSIGNAL_MCP__RESOURCEURL=http://localhost:3000/api/mcp
-NEXTSIGNAL_NOTIFICATIONS__FROM__NAME=Home MCP
+NEXTSIGNAL_NOTIFICATIONS__FROM__NAME=DenarWise
 NEXTSIGNAL_NOTIFICATIONS__FROM__EMAIL=home@example.com
 NEXTSIGNAL_EMAIL__SMTP__HOST=smtp-relay.brevo.com
 NEXTSIGNAL_EMAIL__SMTP__PORT=587

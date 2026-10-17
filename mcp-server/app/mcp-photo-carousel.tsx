@@ -6,17 +6,17 @@ import { useRef, useState } from "react";
 const slides = [
   {
     src: "/images/mcp-carousel/spaces.jpg",
-    alt: "Claude listing three available HomeSpace spaces",
+    alt: "Claude listing three available DenarWise spaces",
     label: "Find every shared space in one ask."
   },
   {
     src: "/images/mcp-carousel/add-shopping-items.jpg",
-    alt: "Claude preparing six drinks and seven bananas for a HomeSpace shopping list",
+    alt: "Claude preparing six drinks and seven bananas for a DenarWise shopping list",
     label: "Add a whole shopping list in one message."
   },
   {
     src: "/images/mcp-carousel/check-shopping-list.jpg",
-    alt: "Claude showing an interactive HomeSpace shopping list with an item selected",
+    alt: "Claude showing an interactive DenarWise shopping list with an item selected",
     label: "Check what’s needed — then clear the basket."
   }
 ] as const;
@@ -43,7 +43,7 @@ export function McpPhotoCarousel() {
   }
 
   return (
-    <section className="editorial-carousel" aria-roledescription="carousel" aria-label="HomeSpace shopping lists in action">
+    <section className="editorial-carousel" aria-roledescription="carousel" aria-label="DenarWise shopping lists in action">
       <div className="editorial-carousel-top">
         <span>Shopping lists in action</span>
         <span>{String(activeSlide + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}</span>

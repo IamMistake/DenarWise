@@ -16,7 +16,7 @@ export async function GET() {
       authorization_servers: [await getWorkOSAuthKitDomain()],
       bearer_methods_supported: ["header"],
       scopes_supported: ["openid", "profile", "email", "offline_access"],
-      resource_name: "Home MCP Server"
+      resource_name: "DenarWise MCP Server"
     },
     {
       headers: metadataHeaders

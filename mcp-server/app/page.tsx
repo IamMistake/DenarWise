@@ -26,7 +26,7 @@ export default async function HomePage() {
             <span className="editorial-brand-mark" aria-hidden="true">
               <Image src="/homespace-logo.png" alt="" width={46} height={46} priority />
             </span>
-            <span>HomeSpace</span>
+            <span>DenarWise</span>
           </a>
           <nav className="editorial-nav-actions" aria-label="Primary">
             {displayName ? (
@@ -73,7 +73,7 @@ export default async function HomePage() {
               Make a shared space for your household, holiday, office, or anything else you shop for together.
             </Step>
             <Step number="02" title="Connect your AI">
-              Add one MCP URL to ChatGPT or Claude and authorize access to your HomeSpace account.
+              Add one MCP URL to ChatGPT or Claude and authorize access to your DenarWise account.
             </Step>
             <Step number="03" title="Shop from anywhere">
               Ask your agent—or anyone in the space—to add items, check what is left, and clear the list after the shop.
@@ -88,11 +88,11 @@ export default async function HomePage() {
             <h2>One URL.<br /><em>Your lists, everywhere.</em></h2>
           </div>
           <p>
-            HomeSpace uses OAuth to connect your account securely. Add the server to your AI client once, sign in, and every shopping space you belong to is ready for the conversation.
+            DenarWise uses OAuth to connect your account securely. Add the server to your AI client once, sign in, and every shopping space you belong to is ready for the conversation.
           </p>
         </div>
 
-        <div className="editorial-server-url" aria-label="HomeSpace MCP server URL">
+        <div className="editorial-server-url" aria-label="DenarWise MCP server URL">
           <span>MCP server URL</span>
           <code>https://homespace.betta.chat/api/mcp</code>
           <strong>OAuth on</strong>
@@ -100,16 +100,16 @@ export default async function HomePage() {
 
         <div className="editorial-setup-grid">
           <ConnectionCard client="Claude" logoSrc="/claude-logo.webp" number="01">
-            Open Claude&apos;s connector settings, choose to add a custom MCP server, and paste the HomeSpace URL. Keep OAuth enabled, then sign in when prompted.
+            Open Claude&apos;s connector settings, choose to add a custom MCP server, and paste the DenarWise URL. Keep OAuth enabled, then sign in when prompted.
           </ConnectionCard>
           <ConnectionCard client="ChatGPT" logoSrc="/chatgpt-logo.png" number="02">
-            Open ChatGPT&apos;s connector settings, add a custom MCP server with the HomeSpace URL, and enable OAuth. Sign in to authorize your shopping spaces.
+            Open ChatGPT&apos;s connector settings, add a custom MCP server with the DenarWise URL, and enable OAuth. Sign in to authorize your shopping spaces.
           </ConnectionCard>
           <aside className="editorial-marketplace-card">
             <div>
               <p className="editorial-kicker">Prefer one-click install?</p>
-              <h3>Know when HomeSpace lands in the app marketplaces.</h3>
-              <p>Leave your email and we&apos;ll tell you when the HomeSpace app is available directly in Claude or ChatGPT.</p>
+              <h3>Know when DenarWise lands in the app marketplaces.</h3>
+              <p>Leave your email and we&apos;ll tell you when the DenarWise app is available directly in Claude or ChatGPT.</p>
             </div>
             <MarketplaceNotificationForm />
           </aside>
@@ -128,7 +128,7 @@ function ConnectionCard({ children, client, logoSrc, number }: { children: React
           <Image src={logoSrc} alt="" width={32} height={32} />
         </span>
       </div>
-      <h3>Add HomeSpace to {client}</h3>
+      <h3>Add DenarWise to {client}</h3>
       <p>{children}</p>
       <div className="editorial-oauth-note"><span aria-hidden="true">✓</span> OAuth must be enabled</div>
     </article>

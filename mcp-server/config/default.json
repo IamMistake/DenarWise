@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "home-mcp-server",
+    "name": "denarwise-mcp-server",
     "environment": "local"
   },
   "logging": {
