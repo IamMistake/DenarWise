@@ -1,0 +1,9 @@
+{
+  "regions": ["fra1"],
+  "crons": [
+    {
+      "path": "/api/maintenance/logs/prune",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

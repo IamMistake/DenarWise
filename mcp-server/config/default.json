@@ -1,0 +1,45 @@
+{
+  "app": {
+    "name": "home-mcp-server",
+    "environment": "local"
+  },
+  "logging": {
+    "retentiondays": 3
+  },
+  "database": {
+    "url": "",
+    "ssl": true,
+    "maxconnections": 3
+  },
+  "notifications": {
+    "from": {
+      "name": "",
+      "email": ""
+    }
+  },
+  "email": {
+    "smtp": {
+      "host": "smtp-relay.brevo.com",
+      "port": 587,
+      "secure": false,
+      "user": "",
+      "pass": ""
+    }
+  },
+  "maintenance": {
+    "cronsecret": ""
+  },
+  "mcp": {
+    "resourceurl": ""
+  },
+  "workos": {
+    "authkitdomain": "",
+    "clientid": "",
+    "apikey": "",
+    "cookiepassword": "",
+    "redirecturi": ""
+  },
+  "worker": {
+    "enabled": false
+  }
+}
