@@ -38,3 +38,26 @@ test("retries a network failure once", () => quiet(async () => {
   const client = createNajdiCenaClient((async () => { if (++calls === 1) throw new TypeError("connection reset"); return response({ metadata: { total: 1 }, data: [row] }); }) as Fetch);
   assert.equal((await client.search("milk", AbortSignal.timeout(1000))).offers.length, 1); assert.equal(calls, 2);
 }));
+
+test("later catalog pages run concurrently within the shared request limit", () => quiet(async () => {
+  let active = 0; let maximum = 0;
+  const client = createNajdiCenaClient((async (input) => {
+    const page = Number(new URL(String(input)).searchParams.get("page"));
+    if (page) {
+      active++; maximum = Math.max(maximum, active);
+      await new Promise((resolve) => setImmediate(resolve));
+      active--;
+    }
+    return response({ metadata: { total: 600 }, data: [{ ...row, name: `Milk ${page}` }] });
+  }) as Fetch);
+  const result = await client.search("milk", AbortSignal.timeout(1000));
+  assert.equal(maximum, 2); assert.equal(result.offers.length, 3);
+}));
+test("one failed later page preserves validated offers with incomplete coverage", () => quiet(async () => {
+  const client = createNajdiCenaClient((async (input) => {
+    const page = Number(new URL(String(input)).searchParams.get("page"));
+    return page === 1 ? response({}, 503) : response({ metadata: { total: 401 }, data: [{ ...row, name: `Milk ${page}` }] });
+  }) as Fetch);
+  const result = await client.search("milk", AbortSignal.timeout(1000));
+  assert.equal(result.offers.length, 2); assert.equal(result.incomplete, true);
+}));

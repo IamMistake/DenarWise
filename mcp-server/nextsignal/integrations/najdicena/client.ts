@@ -49,10 +49,15 @@ export function createNajdiCenaClient(fetcher: Fetch = fetch) {
     async search(search: string, signal: AbortSignal): Promise<SearchResult> {
       const offers = new Map<string, CatalogOffer>();
       const retrievedAt = new Date().toISOString();
-      let total = 0;
-      for (let pageNumber = 0; pageNumber < policy.maxPages; pageNumber++) {
-        const result = await page(search, pageNumber, signal);
-        total = result.metadata.total;
+      const first = await page(search, 0, signal);
+      const total = first.metadata.total;
+      const pageCount = first.data.length ? Math.min(policy.maxPages, Math.ceil(total / policy.pageSize)) : 1;
+      const remaining = await Promise.allSettled(Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) => page(search, index + 1, signal)));
+      signal.throwIfAborted();
+      const failedPages = remaining.filter((result) => result.status === "rejected").length;
+      if (failedPages) await log("warn", "najdicena.pages_incomplete", { failedPages });
+      const pages = [first, ...remaining.flatMap((result) => result.status === "fulfilled" ? [result.value] : [])];
+      for (const result of pages) {
         for (const row of result.data) {
           // Stable across source snapshot IDs, but a changed source name gets a new mapping.
           const id = hash(["najdicena", row.marketName, row.marketSubName, normalize(row.name)].join("|"));
@@ -60,9 +65,8 @@ export function createNajdiCenaClient(fetcher: Fetch = fetch) {
             market: row.marketName, branch: row.marketSubName, price: row.price, available: row.available,
             saleType: row.saleType, promoPeriod: row.promoPeriod, sourceUpdatedAt: row.market_saved_at || row.saved_at, retrievedAt });
         }
-        if (!result.data.length || (pageNumber + 1) * policy.pageSize >= total) break;
       }
-      const incomplete = offers.size < total;
+      const incomplete = failedPages > 0 || offers.size < total;
       if (incomplete) await log("warn", "najdicena.search_incomplete", { returned: offers.size, total });
       return { offers: [...offers.values()], incomplete, retrievedAt };
     }

@@ -160,3 +160,60 @@ test("offer identity evidence and matching version persist independently of deci
   const afterRefresh = (await db.select().from(schema.catalogOffers)).find((row) => row.id === offers[0].id);
   assert.deepEqual(afterRefresh?.evidence, initial);
 }));
+
+test("Qwen failure preserves relevant products as persisted explicit choices", () => quiet(async () => {
+  const broken: GatewayClient = { ...gateway, async extract() { throw new Error("invalid structured output"); } };
+  const matching = createMatching(repository, broken, retrieval(result([offer("Млеко Новамлека 3.2% 1л", "qwen-failure")])));
+  const [matched] = await matching.match([{ query: "novamleka mleko 3.2%", keywords: ["novamleka"], quantity: 1 }]);
+  assert.equal(matched.choices.length, 1); assert.equal(matched.selectedProductId, null);
+  assert.ok(matched.warnings.some((warning) => warning.includes("optional")));
+  assert.ok(await repository.product(matched.choices[0].product.id));
+}));
+test("identity timeout preserves separate relevant products without unchecked merging", () => quiet(async () => {
+  const broken: GatewayClient = { ...gateway, async decisions(state, questions, signal) {
+    if ("pairs" in state) throw new DOMException("Identity timed out", "TimeoutError");
+    return gateway.decisions(state, questions, signal);
+  } };
+  const matching = createMatching(repository, broken, retrieval(result([
+    offer("Млеко Битолско УХТ 3.2% 750мл", "identity-timeout-a"),
+    offer("Битолско млеко УХТ 3.2% 750 мл", "identity-timeout-b")
+  ])));
+  const [matched] = await matching.match([{ ...request, query: "bitolsko mleko 3.2% 750ml identity-timeout" }]);
+  assert.equal(matched.choices.length, 2); assert.equal(matched.selectedProductId, null);
+  assert.notEqual(matched.choices[0].product.id, matched.choices[1].product.id);
+  for (const choice of matched.choices) assert.ok(await repository.product(choice.product.id));
+}));
+test("known brand and category skip Qwen when omitted variants must remain unknown", () => quiet(async () => {
+  let extractions = 0;
+  const instrumented: GatewayClient = { ...gateway, async extract(records, signal) { extractions++; return gateway.extract(records, signal); } };
+  const matching = createMatching(repository, instrumented, retrieval(result([offer("Битолско млеко 3.2% 650мл", "known-name")])));
+  const [matched] = await matching.match([{ ...request, query: "bitolsko mleko 3.2% 650ml" }]);
+  assert.equal(matched.choices.length, 1); assert.equal(extractions, 0);
+  assert.equal(matched.choices[0].product.attributes.variant, null);
+}));
+test("bulk persistence refreshes snapshots while keeping canonical identities and source ownership", () => quiet(async () => {
+  const product = { ...selected, id: "bulk-product" };
+  const originalOffer = offer("Млеко Битолско УХТ 3.2% 1л", "bulk-original");
+  await repository.save(product, [originalOffer], false);
+  const other = { ...selected, id: "bulk-other" };
+  await repository.saveMany([
+    { product: { ...product, name: "Must not overwrite" }, offers: [offer(undefined, "bulk-new")], incomplete: false, evidence: {} },
+    { product: other, offers: [originalOffer], incomplete: false, evidence: {} }
+  ]);
+  const saved = await repository.product(product.id);
+  assert.equal(saved?.product.name, product.name); assert.ok(saved?.refreshedAt);
+  assert.equal((await repository.mappedProducts([originalOffer.id])).get(originalOffer.id), product.id);
+}));
+
+test("a failed relevance batch preserves verified candidates from successful batches", () => quiet(async () => {
+  let batches = 0;
+  const partial: GatewayClient = { ...gateway, async decisions(state, questions, signal) {
+    if ("candidates" in state && ++batches === 2) throw new Error("One relevance batch failed");
+    return gateway.decisions(state, questions, signal);
+  } };
+  const matching = createMatching(repository, partial, retrieval(result(Array.from({ length: 45 }, (_, index) =>
+    offer(`Битолско УХТ млеко 3.2% 1л серија ${index}`, `partial-relevance-${index}`)))));
+  const [matched] = await matching.match([{ ...request, query: "bitolsko mleko 3.2% 1l partial-relevance" }]);
+  assert.ok(matched.choices.length > 0); assert.equal(matched.selectedProductId, null);
+  assert.ok(matched.warnings.some((warning) => warning.includes("Some candidates")));
+}));
