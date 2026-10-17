@@ -1,5 +1,5 @@
 import { apiProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { shoppingListItemsInputSchema, type ShoppingListItemsInput } from "@/nextsignal/schemas";
 import type { ShoppingItem } from "@/nextsignal/domain/home";
@@ -15,7 +15,7 @@ export const shoppingListItemsApi = apiProcess<ShoppingListItemsInput, ShoppingI
   auth: requireUser(),
   validate: validateWith(shoppingListItemsInputSchema),
   async handle(ctx, input) {
-    const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+    const spaceResult = await requireSpace(ctx, input.spaceId);
     if (!spaceResult.ok) return forwardFault(spaceResult);
 
     const items = await ctx.services.shopping.listItems({

@@ -1,6 +1,6 @@
 import { authFail, forbidden, forwardFault, systemFail, value, type ProcessContext, type Result } from "@gotch/nextsignal";
 import type { AuthUser } from "@/nextsignal/adapters/auth";
-import type { ActiveHomeSpace, HomeUser } from "@/nextsignal/domain/home";
+import type { ActiveSpace, HomeUser } from "@/nextsignal/domain/home";
 import type { AppServices } from "@/nextsignal/services";
 
 export async function requireHomeUser(ctx: ProcessContext<AppServices>): Promise<Result<HomeUser>> {
@@ -31,7 +31,7 @@ export async function requireHomeUser(ctx: ProcessContext<AppServices>): Promise
   }
 }
 
-export async function requireHomeSpace(ctx: ProcessContext<AppServices>, spaceId: string): Promise<Result<ActiveHomeSpace>> {
+export async function requireSpace(ctx: ProcessContext<AppServices>, spaceId: string): Promise<Result<ActiveSpace>> {
   const userResult = await requireHomeUser(ctx);
   if (!userResult.ok) return forwardFault(userResult);
   const user = userResult.data;
@@ -43,12 +43,12 @@ export async function requireHomeSpace(ctx: ProcessContext<AppServices>, spaceId
   const membership = await ctx.services.spaces.getMembership(user.id, spaceId);
   if (!membership) {
     await ctx.logger.warn({
-      message: "User attempted to access a home space they are not a member of.",
+      message: "User attempted to access a space they are not a member of.",
       process: ctx.metadata.processName,
       correlationId: ctx.metadata.correlationId,
       data: { userId: user.id, spaceId }
     });
-    return forbidden("You are not a member of that home space.");
+    return forbidden("You are not a member of that space.");
   }
 
   try {
@@ -56,7 +56,7 @@ export async function requireHomeSpace(ctx: ProcessContext<AppServices>, spaceId
     return value({ user, space, membership });
   } catch (error) {
     await ctx.logger.error({
-      message: "Failed to load authorized home space.",
+      message: "Failed to load authorized space.",
       process: ctx.metadata.processName,
       correlationId: ctx.metadata.correlationId,
       data: { userId: user.id, spaceId },

@@ -40,8 +40,8 @@ export function MarketplaceNotificationForm() {
       setState({
         kind: "success",
         message: payload?.data?.status === "already_subscribed"
-          ? "You’re already on the list. We’ll let you know when HomeSpace launches."
-          : "You’re on the list. We’ll email you as soon as HomeSpace is available."
+          ? "You’re already on the list. We’ll let you know when DenarWise launches."
+          : "You’re on the list. We’ll email you as soon as DenarWise is available."
       });
     } catch (error) {
       setState({
@@ -54,7 +54,7 @@ export function MarketplaceNotificationForm() {
   const isLoading = state.kind === "loading";
 
   return (
-    <form className="editorial-marketplace-form" onSubmit={handleSubmit}>
+    <form className="hs-notify-form" onSubmit={handleSubmit}>
       <label htmlFor="marketplace-email">Email address</label>
       <div>
         <input
@@ -69,12 +69,11 @@ export function MarketplaceNotificationForm() {
         />
         <button type="submit" disabled={isLoading}>
           {isLoading ? "Joining…" : "Notify me"}
-          <span aria-hidden="true">↗</span>
         </button>
       </div>
       <p
         id="marketplace-form-status"
-        className={`editorial-form-status ${state.kind}`}
+        className={`hs-form-status ${state.kind}`}
         role={state.kind === "error" ? "alert" : "status"}
         aria-live="polite"
       >

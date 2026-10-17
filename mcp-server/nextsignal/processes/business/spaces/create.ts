@@ -8,7 +8,7 @@ import { spacesCreateInputSchema, type SpacesCreateInput } from "@/nextsignal/sc
 export const spacesCreate = businessProcess<SpacesCreateInput, SpaceDetails, AppServices>({
   name: "spaces.create",
   metadata: {
-    description: "Creates a home space and makes the authenticated user the owner.",
+    description: "Creates a space and makes the authenticated user the owner.",
     tags: ["spaces", "business"]
   },
   auth: requireUser(),
@@ -22,7 +22,7 @@ async function spacesCreateHandle(ctx: ProcessContext<AppServices>, input: Space
   const user = userResult.data!;
 
   await ctx.logger.info({
-    message: "Creating home space.",
+    message: "Creating space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: { userId: user.id, name: input.name }
@@ -34,7 +34,7 @@ async function spacesCreateHandle(ctx: ProcessContext<AppServices>, input: Space
   });
 
   await ctx.logger.info({
-    message: "Created home space.",
+    message: "Created space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: { userId: user.id, spaceId: space.id, inviteCode: space.inviteCode }

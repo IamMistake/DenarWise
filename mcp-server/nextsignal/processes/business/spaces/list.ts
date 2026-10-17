@@ -8,7 +8,7 @@ import { spacesListInputSchema, type SpacesListInput } from "@/nextsignal/schema
 export const spacesList = businessProcess<SpacesListInput, SpaceSummary[], AppServices>({
   name: "spaces.list",
   metadata: {
-    description: "Lists home spaces for the authenticated user.",
+    description: "Lists spaces for the authenticated user.",
     tags: ["spaces", "business"]
   },
   auth: requireUser(),

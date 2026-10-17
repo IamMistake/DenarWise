@@ -1,16 +1,16 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { homeShoppingItems, homeSpaceMembers, homeSpaces, homeTodos, homeUsers } from "@/nextsignal/db/schema";
-import type { HomeSpace, HomeSpaceMember } from "@/nextsignal/domain/home";
+import { homeShoppingItems, spaceMembersTable, spacesTable, homeTodos, homeUsers } from "@/nextsignal/db/schema";
+import type { Space, SpaceMember } from "@/nextsignal/domain/home";
 import { getDb } from "@/nextsignal/services/database";
 
-export type SpaceSummary = HomeSpace & {
-  role: HomeSpaceMember["role"];
+export type SpaceSummary = Space & {
+  role: SpaceMember["role"];
   memberCount: number;
   isActive: boolean;
 };
 
 export type SpaceDetails = SpaceSummary & {
-  members: HomeSpaceMember[];
+  members: SpaceMember[];
 };
 
 export type LeaveSpaceResult = {
@@ -27,7 +27,7 @@ export const spacesService = {
     const name = input.name.trim();
 
     const [space] = await db
-      .insert(homeSpaces)
+      .insert(spacesTable)
       .values({
         id,
         name,
@@ -36,7 +36,7 @@ export const spacesService = {
       })
       .returning();
 
-    await db.insert(homeSpaceMembers).values({
+    await db.insert(spaceMembersTable).values({
       spaceId: id,
       userId: input.userId,
       role: "owner"
@@ -50,14 +50,14 @@ export const spacesService = {
     const code = normalizeInviteCode(input.code);
     const [space] = await db
       .select()
-      .from(homeSpaces)
-      .where(eq(homeSpaces.inviteCode, code))
+      .from(spacesTable)
+      .where(eq(spacesTable.inviteCode, code))
       .limit(1);
 
     if (!space) return null;
 
     await db
-      .insert(homeSpaceMembers)
+      .insert(spaceMembersTable)
       .values({
         spaceId: space.id,
         userId: input.userId,
@@ -72,19 +72,19 @@ export const spacesService = {
     const db = await getDb();
     const rows = await db
       .select({
-        space: homeSpaces,
-        member: homeSpaceMembers
+        space: spacesTable,
+        member: spaceMembersTable
       })
-      .from(homeSpaceMembers)
-      .innerJoin(homeSpaces, eq(homeSpaces.id, homeSpaceMembers.spaceId))
-      .where(eq(homeSpaceMembers.userId, userId))
-      .orderBy(asc(homeSpaces.createdAt));
+      .from(spaceMembersTable)
+      .innerJoin(spacesTable, eq(spacesTable.id, spaceMembersTable.spaceId))
+      .where(eq(spaceMembersTable.userId, userId))
+      .orderBy(asc(spacesTable.createdAt));
 
     if (rows.length === 0) return [];
 
     const memberCounts = await this.countMembers(rows.map((row) => row.space.id));
     return rows.map((row) => ({
-      ...mapHomeSpace(row.space),
+      ...mapSpace(row.space),
       role: row.member.role,
       memberCount: memberCounts.get(row.space.id) ?? 1,
       isActive: true
@@ -104,22 +104,22 @@ export const spacesService = {
     };
   },
 
-  async listMembers(spaceId: string): Promise<HomeSpaceMember[]> {
+  async listMembers(spaceId: string): Promise<SpaceMember[]> {
     const db = await getDb();
     const rows = await db
       .select({
-        member: homeSpaceMembers,
+        member: spaceMembersTable,
         user: homeUsers
       })
-      .from(homeSpaceMembers)
-      .innerJoin(homeUsers, eq(homeUsers.id, homeSpaceMembers.userId))
-      .where(eq(homeSpaceMembers.spaceId, spaceId))
-      .orderBy(asc(homeSpaceMembers.joinedAt));
+      .from(spaceMembersTable)
+      .innerJoin(homeUsers, eq(homeUsers.id, spaceMembersTable.userId))
+      .where(eq(spaceMembersTable.spaceId, spaceId))
+      .orderBy(asc(spaceMembersTable.joinedAt));
 
-    return rows.map((row) => mapHomeSpaceMember(row.member, row.user));
+    return rows.map((row) => mapSpaceMember(row.member, row.user));
   },
 
-  async listNotificationMembers(input: { spaceId: string; excludeUserId: string }): Promise<HomeSpaceMember[]> {
+  async listNotificationMembers(input: { spaceId: string; excludeUserId: string }): Promise<SpaceMember[]> {
     const members = await this.listMembers(input.spaceId);
     return members.filter((member) => member.userId !== input.excludeUserId && member.email);
   },
@@ -129,8 +129,8 @@ export const spacesService = {
 
     return db.transaction(async (tx) => {
       await tx
-        .delete(homeSpaceMembers)
-        .where(and(eq(homeSpaceMembers.userId, input.userId), eq(homeSpaceMembers.spaceId, input.spaceId)));
+        .delete(spaceMembersTable)
+        .where(and(eq(spaceMembersTable.userId, input.userId), eq(spaceMembersTable.spaceId, input.spaceId)));
 
       await tx
         .update(homeUsers)
@@ -138,21 +138,21 @@ export const spacesService = {
         .where(and(eq(homeUsers.id, input.userId), eq(homeUsers.activeSpaceId, input.spaceId)));
 
       const remainingMembers = await tx
-        .select({ userId: homeSpaceMembers.userId, role: homeSpaceMembers.role })
-        .from(homeSpaceMembers)
-        .where(eq(homeSpaceMembers.spaceId, input.spaceId))
-        .orderBy(asc(homeSpaceMembers.joinedAt));
+        .select({ userId: spaceMembersTable.userId, role: spaceMembersTable.role })
+        .from(spaceMembersTable)
+        .where(eq(spaceMembersTable.spaceId, input.spaceId))
+        .orderBy(asc(spaceMembersTable.joinedAt));
       const remainingMemberCount = remainingMembers.length;
 
       if (remainingMemberCount > 0) {
         const hasOwner = remainingMembers.some((member) => member.role === "owner");
         if (!hasOwner) {
           await tx
-            .update(homeSpaceMembers)
+            .update(spaceMembersTable)
             .set({ role: "owner" })
             .where(and(
-              eq(homeSpaceMembers.spaceId, input.spaceId),
-              eq(homeSpaceMembers.userId, remainingMembers[0].userId)
+              eq(spaceMembersTable.spaceId, input.spaceId),
+              eq(spaceMembersTable.userId, remainingMembers[0].userId)
             ));
         }
 
@@ -169,7 +169,7 @@ export const spacesService = {
         .update(homeUsers)
         .set({ activeSpaceId: null, updatedAt: new Date() })
         .where(eq(homeUsers.activeSpaceId, input.spaceId));
-      await tx.delete(homeSpaces).where(eq(homeSpaces.id, input.spaceId));
+      await tx.delete(spacesTable).where(eq(spacesTable.id, input.spaceId));
 
       return {
         spaceId: input.spaceId,
@@ -179,27 +179,27 @@ export const spacesService = {
     });
   },
 
-  async getMembership(userId: string, spaceId: string): Promise<HomeSpaceMember | null> {
+  async getMembership(userId: string, spaceId: string): Promise<SpaceMember | null> {
     const db = await getDb();
     const [row] = await db
       .select({
-        member: homeSpaceMembers,
+        member: spaceMembersTable,
         user: homeUsers
       })
-      .from(homeSpaceMembers)
-      .innerJoin(homeUsers, eq(homeUsers.id, homeSpaceMembers.userId))
-      .where(and(eq(homeSpaceMembers.userId, userId), eq(homeSpaceMembers.spaceId, spaceId)))
+      .from(spaceMembersTable)
+      .innerJoin(homeUsers, eq(homeUsers.id, spaceMembersTable.userId))
+      .where(and(eq(spaceMembersTable.userId, userId), eq(spaceMembersTable.spaceId, spaceId)))
       .limit(1);
 
-    return row ? mapHomeSpaceMember(row.member, row.user) : null;
+    return row ? mapSpaceMember(row.member, row.user) : null;
   },
 
   async countMembers(spaceIds: string[]): Promise<Map<string, number>> {
     const db = await getDb();
     const rows = await db
       .select()
-      .from(homeSpaceMembers)
-      .where(inArray(homeSpaceMembers.spaceId, spaceIds));
+      .from(spaceMembersTable)
+      .where(inArray(spaceMembersTable.spaceId, spaceIds));
     const counts = new Map<string, number>();
 
     for (const row of rows) {
@@ -216,9 +216,9 @@ async function createUniqueInviteCode() {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = generateInviteCode();
     const [existing] = await db
-      .select({ id: homeSpaces.id })
-      .from(homeSpaces)
-      .where(eq(homeSpaces.inviteCode, code))
+      .select({ id: spacesTable.id })
+      .from(spacesTable)
+      .where(eq(spacesTable.inviteCode, code))
       .limit(1);
 
     if (!existing) return code;
@@ -237,7 +237,7 @@ function normalizeInviteCode(code: string) {
   return code.trim().toUpperCase().replaceAll("-", "").replaceAll(" ", "");
 }
 
-function mapHomeSpace(row: typeof homeSpaces.$inferSelect): HomeSpace {
+function mapSpace(row: typeof spacesTable.$inferSelect): Space {
   return {
     id: row.id,
     name: row.name,
@@ -247,10 +247,10 @@ function mapHomeSpace(row: typeof homeSpaces.$inferSelect): HomeSpace {
   };
 }
 
-function mapHomeSpaceMember(
-  member: typeof homeSpaceMembers.$inferSelect,
+function mapSpaceMember(
+  member: typeof spaceMembersTable.$inferSelect,
   user: typeof homeUsers.$inferSelect
-): HomeSpaceMember {
+): SpaceMember {
   return {
     spaceId: member.spaceId,
     userId: member.userId,

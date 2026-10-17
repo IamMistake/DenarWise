@@ -36,7 +36,7 @@ export const shoppingTools: NextSignalMcpTool[] = [
         "shopping_list_items",
         {
           title: "List Shopping Items",
-          description: "Lists current shopping items in the requested home space, optionally filtered by store.",
+          description: "Lists current shopping items in the requested space, optionally filtered by store.",
           inputSchema: {
             spaceId: spaceIdSchema,
             store: z.string().min(1).optional()
@@ -104,7 +104,7 @@ export const shoppingTools: NextSignalMcpTool[] = [
         "shopping_clear_items",
         {
           title: "Clear Shopping Items",
-          description: "Clears requested home space shopping items by id, name, store, or all, then emails other space members.",
+          description: "Clears requested space shopping items by id, name, store, or all, then emails other space members.",
           inputSchema: {
             spaceId: spaceIdSchema,
             all: z.boolean().optional(),

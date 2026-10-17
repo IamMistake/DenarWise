@@ -13,7 +13,7 @@ export const spaceTools: NextSignalMcpTool[] = [
         "space_list",
         {
           title: "List Spaces",
-          description: "Lists home spaces the authenticated user has joined. Use a returned id as spaceId for shopping and member tools.",
+          description: "Lists spaces the authenticated user has joined. Use a returned id as spaceId for shopping and member tools.",
           inputSchema: {}
         },
         async (input, extra) => toMcpToolResult(await dispatchMcpTool<SpacesListInput>(app, "spaces.list", input, extra))
@@ -26,7 +26,7 @@ export const spaceTools: NextSignalMcpTool[] = [
         "space_list_members",
         {
           title: "List Space Members",
-          description: "Lists members in the requested home space.",
+          description: "Lists members in the requested space.",
           inputSchema: {
             spaceId: spaceIdSchema
           }
@@ -41,7 +41,7 @@ export const spaceTools: NextSignalMcpTool[] = [
         "space_leave",
         {
           title: "Leave Space",
-          description: "Leaves a home space. If the space has no members afterward, it and its home data are deleted.",
+          description: "Leaves a space. If the space has no members afterward, it and its home data are deleted.",
           inputSchema: {
             spaceId: spaceIdSchema
           }

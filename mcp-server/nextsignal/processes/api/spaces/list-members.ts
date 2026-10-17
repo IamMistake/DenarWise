@@ -1,13 +1,13 @@
 import { apiProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { spacesListMembersInputSchema, type SpacesListMembersInput } from "@/nextsignal/schemas";
-import type { HomeSpaceMember } from "@/nextsignal/domain/home";
+import type { SpaceMember } from "@/nextsignal/domain/home";
 
-export const spacesListMembersApi = apiProcess<SpacesListMembersInput, HomeSpaceMember[], AppServices>({
+export const spacesListMembersApi = apiProcess<SpacesListMembersInput, SpaceMember[], AppServices>({
   name: "spaces.listMembers",
   metadata: {
-    description: "Lists members in the requested home space.",
+    description: "Lists members in the requested space.",
     tags: ["spaces", "api"],
     owner: "home",
     version: "0.1.0"
@@ -15,7 +15,7 @@ export const spacesListMembersApi = apiProcess<SpacesListMembersInput, HomeSpace
   auth: requireUser(),
   validate: validateWith(spacesListMembersInputSchema),
   async handle(ctx, input) {
-    const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+    const spaceResult = await requireSpace(ctx, input.spaceId);
     if (!spaceResult.ok) return forwardFault(spaceResult);
 
     const members = await ctx.services.spaces.listMembers(input.spaceId);

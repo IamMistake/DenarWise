@@ -24,7 +24,7 @@ Use double underscores for nested config paths, for example `NEXTSIGNAL_DATABASE
 
 ### WorkOS AuthKit
 
-The public home page describes the MCP server. The `/spaces` page uses WorkOS AuthKit browser sessions so signed-in users can create home spaces and join spaces by invite code. The MCP endpoint uses WorkOS-issued bearer tokens through MCP OAuth resource metadata. MCP clients should call `space_list`, choose a returned `id`, then pass it as `spaceId` to `space_list_members`, shopping tools, and todo tools.
+The public home page describes the MCP server. The `/spaces` page uses WorkOS AuthKit browser sessions so signed-in users can create spaces and join spaces by invite code. The MCP endpoint uses WorkOS-issued bearer tokens through MCP OAuth resource metadata. MCP clients should call `space_list`, choose a returned `id`, then pass it as `spaceId` to `space_list_members`, shopping tools, and todo tools.
 
 Required local envs:
 
