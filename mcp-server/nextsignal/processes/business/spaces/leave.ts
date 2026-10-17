@@ -1,6 +1,6 @@
 import { businessProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import type { LeaveSpaceResult } from "@/nextsignal/services/spaces";
 import { spacesLeaveInputSchema, type SpacesLeaveInput } from "@/nextsignal/schemas";
@@ -8,7 +8,7 @@ import { spacesLeaveInputSchema, type SpacesLeaveInput } from "@/nextsignal/sche
 export const spacesLeave = businessProcess<SpacesLeaveInput, LeaveSpaceResult, AppServices>({
   name: "spaces.leave",
   metadata: {
-    description: "Removes the authenticated user from a home space and deletes the space when it has no members.",
+    description: "Removes the authenticated user from a space and deletes the space when it has no members.",
     tags: ["spaces", "business"]
   },
   auth: requireUser(),
@@ -17,12 +17,12 @@ export const spacesLeave = businessProcess<SpacesLeaveInput, LeaveSpaceResult, A
 });
 
 async function spacesLeaveHandle(ctx: ProcessContext<AppServices>, input: SpacesLeaveInput) {
-  const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+  const spaceResult = await requireSpace(ctx, input.spaceId);
   if (!spaceResult.ok) return forwardFault(spaceResult);
   const { user } = spaceResult.data!;
 
   await ctx.logger.info({
-    message: "Leaving home space.",
+    message: "Leaving space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: { userId: user.id, spaceId: input.spaceId }
@@ -34,7 +34,7 @@ async function spacesLeaveHandle(ctx: ProcessContext<AppServices>, input: Spaces
   });
 
   await ctx.logger.info({
-    message: result.deletedSpace ? "Left and deleted empty home space." : "Left home space.",
+    message: result.deletedSpace ? "Left and deleted empty space." : "Left space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: {

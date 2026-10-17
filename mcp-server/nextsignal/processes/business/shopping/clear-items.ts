@@ -1,9 +1,9 @@
 import { businessProcess, forwardFault, notFound, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { shoppingClearItemsInputSchema, type ShoppingClearItemsInput } from "@/nextsignal/schemas";
-import type { ActiveHomeSpace, HomeChangeNotification, ShoppingItem } from "@/nextsignal/domain/home";
+import type { ActiveSpace, HomeChangeNotification, ShoppingItem } from "@/nextsignal/domain/home";
 
 export type ShoppingClearItemsOutput = {
   clearedItems: ShoppingItem[];
@@ -13,7 +13,7 @@ export type ShoppingClearItemsOutput = {
 export const shoppingClearItems = businessProcess<ShoppingClearItemsInput, ShoppingClearItemsOutput, AppServices>({
   name: "shopping.clearItems",
   metadata: {
-    description: "Clears shopping items by id, name, store, or all, then notifies the requested home space.",
+    description: "Clears shopping items by id, name, store, or all, then notifies the requested space.",
     tags: ["shopping", "business"],
     owner: "home",
     version: "0.1.0"
@@ -24,7 +24,7 @@ export const shoppingClearItems = businessProcess<ShoppingClearItemsInput, Shopp
 });
 
 async function shoppingClearItemsHandle(ctx: ProcessContext<AppServices>, input: ShoppingClearItemsInput) {
-  const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+  const spaceResult = await requireSpace(ctx, input.spaceId);
   if (!spaceResult.ok) return forwardFault(spaceResult);
   const activeSpace = spaceResult.data!;
 
@@ -86,7 +86,7 @@ async function shoppingClearItemsHandle(ctx: ProcessContext<AppServices>, input:
 }
 
 function createShoppingClearNotification(
-  activeSpace: ActiveHomeSpace,
+  activeSpace: ActiveSpace,
   data: ShoppingClearItemsOutput
 ): HomeChangeNotification {
   const count = data.clearedItems.length;

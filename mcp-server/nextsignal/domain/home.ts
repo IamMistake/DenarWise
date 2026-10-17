@@ -9,7 +9,7 @@ export type HomeUser = {
   updatedAt: string;
 };
 
-export type HomeSpace = {
+export type Space = {
   id: string;
   name: string;
   inviteCode: string;
@@ -17,7 +17,7 @@ export type HomeSpace = {
   createdAt: string;
 };
 
-export type HomeSpaceMember = {
+export type SpaceMember = {
   spaceId: string;
   userId: string;
   role: SpaceMemberRole;
@@ -26,10 +26,10 @@ export type HomeSpaceMember = {
   joinedAt: string;
 };
 
-export type ActiveHomeSpace = {
+export type ActiveSpace = {
   user: HomeUser;
-  space: HomeSpace;
-  membership: HomeSpaceMember;
+  space: Space;
+  membership: SpaceMember;
 };
 
 export type ShoppingItem = {

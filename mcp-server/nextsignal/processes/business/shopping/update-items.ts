@@ -1,6 +1,6 @@
 import { businessProcess, forwardFault, notFound, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { shoppingUpdateItemsInputSchema, type ShoppingUpdateItemsInput } from "@/nextsignal/schemas";
 import type { ShoppingItem } from "@/nextsignal/domain/home";
@@ -24,12 +24,12 @@ export const shoppingUpdateItems = businessProcess<ShoppingUpdateItemsInput, Sho
 });
 
 async function shoppingUpdateItemsHandle(ctx: ProcessContext<AppServices>, input: ShoppingUpdateItemsInput) {
-  const sourceSpaceResult = await requireHomeSpace(ctx, input.spaceId);
+  const sourceSpaceResult = await requireSpace(ctx, input.spaceId);
   if (!sourceSpaceResult.ok) return forwardFault(sourceSpaceResult);
 
   const targetSpaceId = input.targetSpaceId ?? input.spaceId;
   if (targetSpaceId !== input.spaceId) {
-    const targetSpaceResult = await requireHomeSpace(ctx, targetSpaceId);
+    const targetSpaceResult = await requireSpace(ctx, targetSpaceId);
     if (!targetSpaceResult.ok) return forwardFault(targetSpaceResult);
   }
 

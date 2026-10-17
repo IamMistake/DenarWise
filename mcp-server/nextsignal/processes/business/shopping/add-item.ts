@@ -1,9 +1,9 @@
 import { businessProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { shoppingAddItemInputSchema, type ShoppingAddItemInput } from "@/nextsignal/schemas";
-import type { ActiveHomeSpace, HomeChangeNotification, ShoppingItem } from "@/nextsignal/domain/home";
+import type { ActiveSpace, HomeChangeNotification, ShoppingItem } from "@/nextsignal/domain/home";
 
 export type ShoppingAddItemOutput = {
   item: ShoppingItem;
@@ -14,7 +14,7 @@ export type ShoppingAddItemOutput = {
 export const shoppingAddItem = businessProcess<ShoppingAddItemInput, ShoppingAddItemOutput, AppServices>({
   name: "shopping.addItem",
   metadata: {
-    description: "Adds a shopping item and notifies the requested home space.",
+    description: "Adds a shopping item and notifies the requested space.",
     tags: ["shopping", "business"],
     owner: "home",
     version: "0.1.0"
@@ -25,7 +25,7 @@ export const shoppingAddItem = businessProcess<ShoppingAddItemInput, ShoppingAdd
 });
 
 async function shoppingAddItemHandle(ctx: ProcessContext<AppServices>, input: ShoppingAddItemInput) {
-  const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+  const spaceResult = await requireSpace(ctx, input.spaceId);
   if (!spaceResult.ok) return forwardFault(spaceResult);
   const activeSpace = spaceResult.data!;
   const itemsToAdd = getShoppingItemsToAdd(input);
@@ -72,7 +72,7 @@ async function shoppingAddItemHandle(ctx: ProcessContext<AppServices>, input: Sh
 }
 
 function createShoppingAddNotification(
-  activeSpace: ActiveHomeSpace,
+  activeSpace: ActiveSpace,
   data: ShoppingAddItemOutput
 ): HomeChangeNotification {
   const count = data.addedItems.length;

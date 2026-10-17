@@ -15,7 +15,7 @@ export const homeUsers = pgTable(
   ]
 );
 
-export const homeSpaces = pgTable(
+export const spacesTable = pgTable(
   "home_spaces",
   {
     id: text("id").primaryKey(),
@@ -30,7 +30,7 @@ export const homeSpaces = pgTable(
   ]
 );
 
-export const homeSpaceMembers = pgTable(
+export const spaceMembersTable = pgTable(
   "home_space_members",
   {
     spaceId: text("space_id").notNull(),

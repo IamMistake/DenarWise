@@ -8,7 +8,7 @@ import { spacesJoinInputSchema, type SpacesJoinInput } from "@/nextsignal/schema
 export const spacesJoin = businessProcess<SpacesJoinInput, SpaceDetails, AppServices>({
   name: "spaces.join",
   metadata: {
-    description: "Joins a home space by invite code.",
+    description: "Joins a space by invite code.",
     tags: ["spaces", "business"]
   },
   auth: requireUser(),
@@ -22,7 +22,7 @@ async function spacesJoinHandle(ctx: ProcessContext<AppServices>, input: SpacesJ
   const user = userResult.data!;
 
   await ctx.logger.info({
-    message: "Joining home space.",
+    message: "Joining space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: { userId: user.id }
@@ -35,16 +35,16 @@ async function spacesJoinHandle(ctx: ProcessContext<AppServices>, input: SpacesJ
 
   if (!space) {
     await ctx.logger.warn({
-      message: "Home space invite code was not found.",
+      message: "Space invite code was not found.",
       process: ctx.metadata.processName,
       correlationId: ctx.metadata.correlationId,
       data: { userId: user.id }
     });
-    return notFound("No home space matched that invite code.");
+    return notFound("No space matched that invite code.");
   }
 
   await ctx.logger.info({
-    message: "Joined home space.",
+    message: "Joined space.",
     process: ctx.metadata.processName,
     correlationId: ctx.metadata.correlationId,
     data: { userId: user.id, spaceId: space.id }

@@ -1,9 +1,9 @@
 import { businessProcess, forwardFault, notFound, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
-import { requireHomeSpace } from "@/nextsignal/processes/business/context";
+import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { todoCompleteInputSchema, type TodoCompleteInput } from "@/nextsignal/schemas";
-import type { ActiveHomeSpace, HomeChangeNotification, TodoItem } from "@/nextsignal/domain/home";
+import type { ActiveSpace, HomeChangeNotification, TodoItem } from "@/nextsignal/domain/home";
 
 export type TodoCompleteOutput = {
   completedTodos: TodoItem[];
@@ -13,7 +13,7 @@ export type TodoCompleteOutput = {
 export const todoComplete = businessProcess<TodoCompleteInput, TodoCompleteOutput, AppServices>({
   name: "todos.complete",
   metadata: {
-    description: "Completes todos by id or title and notifies the requested home space.",
+    description: "Completes todos by id or title and notifies the requested space.",
     tags: ["todos", "business"],
     owner: "home",
     version: "0.1.0"
@@ -24,7 +24,7 @@ export const todoComplete = businessProcess<TodoCompleteInput, TodoCompleteOutpu
 });
 
 async function todoCompleteHandle(ctx: ProcessContext<AppServices>, input: TodoCompleteInput) {
-  const spaceResult = await requireHomeSpace(ctx, input.spaceId);
+  const spaceResult = await requireSpace(ctx, input.spaceId);
   if (!spaceResult.ok) return forwardFault(spaceResult);
   const activeSpace = spaceResult.data!;
 
@@ -84,7 +84,7 @@ async function todoCompleteHandle(ctx: ProcessContext<AppServices>, input: TodoC
 }
 
 function createTodoCompleteNotification(
-  activeSpace: ActiveHomeSpace,
+  activeSpace: ActiveSpace,
   data: TodoCompleteOutput
 ): HomeChangeNotification {
   const count = data.completedTodos.length;
