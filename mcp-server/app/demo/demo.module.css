@@ -55,6 +55,10 @@
 .demoHeading { text-align: center; flex: none; }
 .demoHeading h2 { font-size: clamp(22px, 2.35vw, 45px); letter-spacing: -.06em; margin-top: 6px; }
 .demoStage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: clamp(25px, 4.2vw, 90px); align-items: center; justify-content: center; flex: 1; min-height: 0; padding-top: 18px; }
+.videoStage { display: flex; align-items: center; justify-content: center; flex: 1; min-height: 0; padding-top: 24px; }
+.recordedVideo { display: block; width: min(100%, 1100px); height: auto; max-height: 100%; min-height: 0; aspect-ratio: 568 / 320; object-fit: contain; border: 2px solid var(--color-navy-line); border-radius: 18px; background: var(--color-navy-2); box-shadow: 0 10px 0 var(--color-navy-2); }
+.videoSubtitle { color: var(--color-on-navy-muted); margin-top: 14px !important; font-size: clamp(11px, 1.1vw, 20px); line-height: 1.7; }
+.videoSlide .demoHeading h2 { color: var(--color-lime); }
 .caption { max-width: 440px; }
 .caption h3 { font-size: clamp(22px, 2.25vw, 44px); line-height: 1.45; letter-spacing: -.06em; }
 .caption > p { color: var(--color-on-navy-muted); font-size: clamp(12px, 1vw, 20px); line-height: 1.8; margin-top: 19px; }
@@ -244,7 +248,7 @@
 @media (min-width: 601px) and (max-width: 800px) {
   .header { padding-inline: 16px; gap: 10px; }
   .brand { font-size: 16px; }
-  .navLinks > a { font-size: 10px; padding-inline: 9px; }
+  .navLinks > a { font-size: 9px; padding-inline: 7px; }
 }
 @media (max-width: 600px) {
   .fullscreenTip { display: none; }
@@ -281,6 +285,7 @@
   .demoHeading .kicker { font-size: 9px; }
   .demoHeading h2 { font-size: clamp(16px, 4.5vw, 26px); }
   .demoStage { position: relative; display: flex; align-items: center; flex-direction: column; gap: 12px; padding-top: 12px; min-height: 0; }
+  .recordedVideo { flex: none; width: 100%; height: auto; max-height: 48vh; border-radius: 12px; }
   .captionLeft { flex: none; text-align: center; animation-name: messageIn; }
   .captionLeft h3 { font-size: 16px; line-height: 1.4; }
   .captionLeft h3 br { display: none; }

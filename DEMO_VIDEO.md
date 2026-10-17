@@ -1,265 +1,95 @@
-# Replace the second slide with a real MP4
+# Demo video: local preview and Vercel deployment
 
-The presentation is at **`/demo`**. Its second slide (`#watch`) currently uses a scripted React phone animation. Follow these steps to replace the animated phone with a real recording and keep the side captions synchronized with the video.
+The third slide at **`/demo#video`** plays a real MP4 under “Our last-minute MCP demo.” The second slide at `/demo#watch` keeps the scripted phone animation.
 
-## Files to edit
+## Current recording
 
-| File | Change |
+- Source: `final.mp4` in the repository root (kept locally; ignored by Git).
+- Browser asset: `mcp-server/public/videos/denarwise-demo.mp4`.
+- Poster: `mcp-server/public/videos/denarwise-demo-poster.webp`.
+- Clip: approximately 76 seconds, landscape, 568 × 320.
+- Optimized MP4: 3,942,226 bytes (3.94 MB), approximately **55% smaller** than the 8,669,314-byte source.
+- Format: H.264 video with AAC audio. MP4 fast-start metadata allows playback before the entire file downloads.
+
+This is the final supplied recording, replacing the earlier 2.3-second preview clip.
+
+## Preview locally
+
+From `mcp-server/`:
+
+```bash
+npm run dev
+```
+
+Open **`http://localhost:3000/demo#video`**, or the port printed by Next.js.
+
+The video:
+
+- Starts muted when entering slide three and loops.
+- Pauses when leaving the slide, and restarts when returning.
+- Provides native playback, seeking, volume, and fullscreen controls.
+- Can also be paused or resumed with the presentation footer button.
+- Shows its poster and waits for Play when the browser prefers reduced motion.
+
+If autoplay is blocked, press Play. Enable audio through the video’s volume control.
+
+## Replace the recording later
+
+Put the replacement source outside `public/`, then run these commands from the repository root. FFmpeg must be installed.
+
+```bash
+ffmpeg -i YOUR_RECORDING.mov \
+  -map 0:v:0 -map '0:a:0?' \
+  -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p \
+  -c:a aac -b:a 80k \
+  -movflags +faststart -map_metadata -1 \
+  -y mcp-server/public/videos/denarwise-demo.mp4
+
+ffmpeg -ss 1 -i mcp-server/public/videos/denarwise-demo.mp4 \
+  -frames:v 1 -quality 80 \
+  -y mcp-server/public/videos/denarwise-demo-poster.webp
+```
+
+These settings preserve the source dimensions. For a high-resolution recording, consider adding `-vf 'scale=1280:-2'` to the first command for a landscape video; choose dimensions appropriate to the source so small recordings are not upscaled.
+
+### Presentation files
+
+| File | Purpose |
 | --- | --- |
-| `mcp-server/public/videos/denarwise-demo.mp4` | Add your recording here. |
-| `mcp-server/app/demo/demo-experience.tsx` | Replace the animated phone and connect video playback. |
-| `mcp-server/app/demo/demo.module.css` | Add the video sizing styles. |
+| `mcp-server/app/demo/demo-experience.tsx` | Video source, poster, playback lifecycle, slide heading, and footer control. |
+| `mcp-server/app/demo/animated-demo.tsx` | Original animated phone walkthrough on slide two. |
+| `mcp-server/app/demo/demo.module.css` | `.recordedVideo`, `.videoStage`, and responsive layout rules. |
 
-## 1. Add the recording
+The current layout is landscape. For a portrait shopping recording, update the `<video>` width/height attributes and `.recordedVideo` aspect ratio and width to match. Update the heading and the `Recorded MCP product demo` label as needed. Playback is tied to `active === 2` (the third slide, using zero-based indexing).
 
-Create `mcp-server/public/videos/` and put your MP4 inside:
+If the new file is shorter than one second, choose an earlier poster timestamp. Keep the original recording out of the deployment; only the optimized MP4 and poster belong in `public/videos/`.
 
-```text
-mcp-server/public/videos/denarwise-demo.mp4
-```
+## How the video reaches Vercel
 
-Next.js serves that file at **`/videos/denarwise-demo.mp4`**. Do not include `public` or `mcp-server` in the browser URL.
-
-Use a portrait recording for the existing phone-centered layout. Export as **MP4 with H.264 video**, and AAC audio if the recording has sound. Crop out unrelated desktop content and leave time to read each result.
-
-## 2. Add a video ref
-
-In `DemoExperience`, next to the existing `deck` ref, add:
-
-```tsx
-const demoVideo = useRef<HTMLVideoElement>(null);
-```
-
-`useRef` is already imported.
-
-## 3. Replace the animated phone
-
-Find the second slide:
-
-```tsx
-<section id="watch" ...>
-```
-
-Inside its `styles.demoStage` container, replace the **entire central `<div className={styles.phone} ...>...</div>`**, including its status bar, header, phone panels, and composer, with:
-
-```tsx
-<video
-  ref={demoVideo}
-  className={styles.recordedVideo}
-  aria-label="DenarWise mobile demo recording"
-  controls
-  muted
-  playsInline
-  loop
-  preload="metadata"
-  onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
-  onPlay={() => setPaused(false)}
-  onPause={() => setPaused(true)}
->
-  <source src="/videos/denarwise-demo.mp4" type="video/mp4" />
-  Your browser does not support video playback.
-</video>
-```
-
-The two `<aside>` caption elements stay on either side of this video. `muted` enables automatic playback in most browsers, and `playsInline` keeps mobile browsers from forcing their own fullscreen player. Native controls let the viewer play the recording if autoplay is blocked or enable sound if needed.
-
-## 4. Replace the simulated playback clock
-
-Find and remove both existing effects:
-
-- The effect containing `setTime(0); setPaused(false);` with `[active]` as its dependency.
-- The effect containing `setInterval` and `(value + delta) % 40`.
-
-Replace them with this effect inside `DemoExperience`:
-
-```tsx
-useEffect(() => {
-  const video = demoVideo.current;
-  if (!video) return;
-
-  let cancelled = false;
-  video.pause();
-  video.currentTime = 0;
-  setTime(0);
-
-  if (active === 1) {
-    void video.play().catch(() => {
-      // The native Play control is available if autoplay is blocked.
-      if (!cancelled) setPaused(true);
-    });
-  }
-
-  return () => {
-    cancelled = true;
-    video.pause();
-  };
-}, [active]);
-```
-
-Slide indexes are zero-based: **`active === 1` is the second slide**. This starts the recording when entering that slide, pauses it when leaving, and restarts it on the next visit. The `loop` attribute handles replay.
-
-The video’s `currentTime` now drives captions and progress. Keep the simulated interval removed so two different clocks cannot get out of sync.
-
-## 5. Connect the footer’s Pause / Resume button
-
-Add this function inside `DemoExperience`, before its `return`:
-
-```tsx
-function toggleVideoPlayback() {
-  const video = demoVideo.current;
-  if (!video) return;
-
-  if (video.paused) {
-    void video.play().catch(() => setPaused(true));
-  } else {
-    video.pause();
-  }
-}
-```
-
-In the footer button with `className={styles.pauseButton}`, replace:
-
-```tsx
-onClick={() => setPaused(!paused)}
-```
-
-with:
-
-```tsx
-onClick={toggleVideoPlayback}
-```
-
-Keep its existing visible label and change the `aria-label` to:
-
-```tsx
-aria-label={paused ? "Resume demo video" : "Pause demo video"}
-```
-
-The video’s `onPlay` and `onPause` handlers update the labels whether playback changes through the footer or the native video controls.
-
-## 6. Match the captions to your recording
-
-The `scenes` array near the top of the file controls the side captions. Its current timing is:
-
-| Scene | Start | End |
-| --- | ---: | ---: |
-| Your spaces | 0 s | 8 s |
-| Add products | 8 s | 21 s |
-| The full list | 21 s | 30 s |
-| Sale alert | 30 s | 40 s |
-
-Update the `start` and `end` values to match the actual moments in your MP4. Keep the entries in order, start the first at `0`, and make the final `end` match the recording’s duration. Update the caption text to describe what you actually recorded.
-
-Replace the existing `scene`, `currentScene`, and `current` declarations with:
-
-```tsx
-const currentScene = scenes.reduce(
-  (latest, scene, index) => (time >= scene.start ? index : latest),
-  0
-);
-const current = scenes[currentScene];
-```
-
-This holds the last caption at the end of the recording instead of briefly falling back to the first caption. It returns to the first when the video loops to time `0`.
-
-In the `styles.sceneProgress` rendering, clamp the current segment’s progress. Replace its existing `transform` value with:
-
-```tsx
-transform: `scaleX(${
-  index < currentScene
-    ? 1
-    : index === currentScene
-      ? Math.min(1, Math.max(0, (time - item.start) / (item.end - item.start)))
-      : 0
-})`
-```
-
-Every scene must have `end > start`.
-
-## 7. Add video styles
-
-Add these rules to `mcp-server/app/demo/demo.module.css`:
-
-```css
-.recordedVideo {
-  display: block;
-  width: clamp(260px, 19.4vw, 390px);
-  height: min(100%, 690px);
-  max-width: 100%;
-  min-height: 0;
-  aspect-ratio: 9 / 16;
-  object-fit: contain;
-  border: 2px solid var(--color-navy-line);
-  border-radius: 24px;
-  background: var(--color-navy-2);
-}
-
-@media (max-width: 900px) {
-  .recordedVideo {
-    width: 250px;
-    max-height: 560px;
-  }
-}
-
-@media (max-width: 600px) {
-  .recordedVideo {
-    width: 255px;
-    max-width: 90%;
-    flex: 1;
-    max-height: 520px;
-  }
-}
-```
-
-`object-fit: contain` shows the complete recording without cropping the shopping UI. The video occupies the same central position as the animated phone.
-
-## 8. Update the label and remove unused animation code
-
-Change the second slide’s footer text from:
+Next.js serves `public/` files as static assets. The browser URL omits `public`:
 
 ```text
-Animated walkthrough · sample data
+File: mcp-server/public/videos/denarwise-demo.mp4
+URL:  /videos/denarwise-demo.mp4
 ```
 
-to a description of the recording, for example:
+After local review, commit the optimized MP4, poster, and source changes and push to the branch connected to Vercel. Vercel fetches those files from Git, builds the app, and includes the video in the deployment’s static assets. No separate manual video upload or runtime server storage is required.
+
+Production URL after deployment:
 
 ```text
-Recorded walkthrough
+https://denarwise.betta.chat/videos/denarwise-demo.mp4
 ```
 
-If the recording uses sample prices or includes a sale-alert prototype, retain that context in the label or the relevant scene caption.
+The original source recording does not need to be committed. For this small optimized clip, storing the MP4 directly in Git is sufficient. If future recordings become large, move them to object storage such as Vercel Blob and use the hosted URL as the video source.
 
-Remove the now-unused `phoneCues` constant, `cue` calculation, and these phone-animation components:
+## Verification
 
-- `Message`
-- `Reveal`
-- `Typing`
-- `PhoneContent`
-- `PhonePanel`
-
-Remove `memo`, `useLayoutEffect`, and the `ReactNode` type import once they are unused. Keep `Milk`, which is also used on the first slide. The corresponding phone-only CSS can be removed after checking for remaining references.
-
-## 9. Verify
-
-Run from `mcp-server/`:
+From `mcp-server/`:
 
 ```bash
 npm run check
 npm run build
 ```
 
-For local preview:
-
-```bash
-npm run dev
-```
-
-Open `/videos/denarwise-demo.mp4` directly to confirm the file loads, then visit **`/demo#watch`** and check:
-
-- The recording starts on the second slide and stays paused on the others.
-- Leaving and returning restarts the recording.
-- Both the footer and native controls can pause and resume playback.
-- Captions follow the recording, including after seeking and looping.
-- The entire video fits on desktop and mobile.
-
-Deploy the MP4 with the app along with the two edited source files. For later recording replacements, overwrite the same MP4 and redeploy; update the scene timings whenever the recording’s pacing changes.
+Check desktop and mobile playback, pause/resume, leaving and returning to slide three, looping, and reduced-motion behavior. Check that the animated walkthrough still runs on slide two. Verify `/videos/denarwise-demo.mp4` loads directly.
