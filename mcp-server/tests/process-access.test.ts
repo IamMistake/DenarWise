@@ -5,6 +5,7 @@ import type { AppServices } from "../nextsignal/services";
 import { shoppingPreviewAddApi } from "../nextsignal/processes/api/shopping/preview-add";
 import { shoppingSearchProductsApi } from "../nextsignal/processes/api/shopping/search-products";
 import { shoppingUpdateItems } from "../nextsignal/processes/business/shopping/update-items";
+import { spacesDashboard } from "../nextsignal/processes/business/spaces/dashboard";
 import { quietLogger } from "./helpers";
 const user = { id: "user", email: "user@example.test", displayName: "User", activeSpaceId: null, createdAt: "now", updatedAt: "now" };
 function context(sourceMembership = false) {
@@ -32,6 +33,18 @@ test("moving items requires membership in both source and destination", async ()
   const { ctx, calls } = context(true);
   const result = await shoppingUpdateItems.handle(ctx, { spaceId: "source", targetSpaceId: "other", itemIds: ["item"] });
   assert.equal(result.meta.kind, "forbidden"); assert.equal(calls(), 0);
+});
+
+test("dashboard resolves the authenticated home user once and scopes its batched read to that user", async () => {
+  const { ctx } = context();
+  let ensured = 0;
+  let dashboardUser: string | undefined;
+  Object.assign(ctx.services.users, { ensureFromWorkOS: async () => { ensured++; return user; } });
+  Object.assign(ctx.services.spaces, { listDashboard: async (userId: string) => { dashboardUser = userId; return []; } });
+  const result = await spacesDashboard.handle(ctx, {});
+  assert.equal(result.ok, true);
+  assert.equal(ensured, 1);
+  assert.equal(dashboardUser, user.id);
 });
 
 test("confirmation retries preserve recommendations and send one notification", async () => {

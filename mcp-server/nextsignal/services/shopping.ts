@@ -98,7 +98,7 @@ export function createShoppingService(database = getDb, catalog = catalogReposit
 }; }
 export const shoppingService = createShoppingService();
 
-function mapShoppingItem(row: typeof homeShoppingItems.$inferSelect): ShoppingItem {
+export function mapShoppingItem(row: typeof homeShoppingItems.$inferSelect): ShoppingItem {
   return { id: row.id, spaceId: row.spaceId, name: row.name, quantity: row.quantity, store: row.store,
     requestedStore: row.store, productId: row.productId, originalQuery: row.originalQuery ?? row.name,
     keywords: row.keywords, createdAt: row.createdAt.toISOString() };

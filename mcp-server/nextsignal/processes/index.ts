@@ -11,6 +11,7 @@ import { shoppingAddItem } from "@/nextsignal/processes/business/shopping/add-it
 import { shoppingClearItems } from "@/nextsignal/processes/business/shopping/clear-items";
 import { shoppingUpdateItems } from "@/nextsignal/processes/business/shopping/update-items";
 import { spacesCreate } from "@/nextsignal/processes/business/spaces/create";
+import { spacesDashboard } from "@/nextsignal/processes/business/spaces/dashboard";
 import { spacesJoin } from "@/nextsignal/processes/business/spaces/join";
 import { spacesLeave } from "@/nextsignal/processes/business/spaces/leave";
 import { spacesList } from "@/nextsignal/processes/business/spaces/list";
@@ -37,6 +38,7 @@ export const processes = [
   healthBusiness,
   ensureCurrentUser,
   spacesList,
+  spacesDashboard,
   spacesCreate,
   spacesJoin,
   spacesLeave,

@@ -2,7 +2,7 @@ import Image from "next/image";
 import { CopyButton } from "../copy-button";
 import { MarketChip, MarketLogo } from "../market-logo";
 import { ArrowIcon, SiteNav } from "../site-nav";
-import { LeaveSpace, Toast } from "./space-client";
+import { LeaveSpace, SubmitButton, Toast } from "./space-client";
 import type { SpaceMember, ShoppingItem } from "@/nextsignal/domain/home";
 import { MARKETS, formatDenars, sampleBasket, summarizeBasket } from "@/nextsignal/domain/price-matching";
 import type { SpaceSummary } from "@/nextsignal/services/spaces";
@@ -34,12 +34,12 @@ export function SpacesView({ displayName, spaces, actions, toast }: SpacesViewPr
 
   return (
     <main className="hs">
-      {toast ? <Toast tone={toast.tone} message={toast.message} /> : null}
+      {toast ? <Toast key={crypto.randomUUID()} tone={toast.tone} message={toast.message} /> : null}
 
       <SiteNav links={[{ href: "/", label: "Home" }, { href: "/spaces", label: "Spaces", current: true }]}>
         <span className="hs-user">{displayName}</span>
         <form action={actions.signOut}>
-          <button className="hs-btn hs-btn--small hs-btn--ghost" type="submit">Sign out</button>
+          <SubmitButton className="hs-btn hs-btn--small hs-btn--ghost" pendingLabel="Signing out…">Sign out</SubmitButton>
         </form>
       </SiteNav>
 
@@ -75,7 +75,7 @@ function StartCards({ actions }: { actions: SpacesViewActions }) {
             Space name
             <input name="name" required maxLength={80} placeholder="e.g. Home" autoComplete="off" />
           </label>
-          <button className="hs-btn hs-btn--sun" type="submit">Create space <ArrowIcon /></button>
+          <SubmitButton className="hs-btn hs-btn--sun" pendingLabel="Creating…">Create space <ArrowIcon /></SubmitButton>
         </form>
         <p className="hint">Then share the invite code with the people you shop with.</p>
       </div>
@@ -88,7 +88,7 @@ function StartCards({ actions }: { actions: SpacesViewActions }) {
             Invite code
             <input name="code" required maxLength={32} placeholder="ABCD2345" autoComplete="off" spellCheck={false} />
           </label>
-          <button className="hs-btn" type="submit">Join space</button>
+          <SubmitButton className="hs-btn" pendingLabel="Joining…">Join space</SubmitButton>
         </form>
       </div>
     </section>

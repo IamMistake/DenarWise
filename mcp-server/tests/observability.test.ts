@@ -62,12 +62,28 @@ test("secrets and provider payloads are redacted, including error strings", () =
   const result = JSON.stringify(sanitize({ authorization: "Bearer SECRET", apiKey: "SECRET", payload: { private: "request" }, error: new Error("Bearer SECRET sk-test-key") }));
   assert.equal(result.includes("SECRET"), false); assert.equal(result.includes("sk-test-key"), false); assert.equal(result.includes("request"), false);
 });
-test("database logger failure produces a sanitized console fallback", async () => {
+test("logger emits structured, sanitized output synchronously without database persistence", () => {
   const original = console.error; const output: string[] = [];
   console.error = (text) => { output.push(String(text)); };
-  try { await loggerAdapter.error({ message: "failed", data: { apiKey: "secret" }, error: new Error("upstream failed") }); }
+  try {
+    const result = loggerAdapter.error({ message: "failed", correlationId: "diagnostic-id", data: { apiKey: "secret" }, error: new Error("upstream failed") });
+    assert.equal(result, undefined, "logging must not return a database persistence promise");
+  }
   finally { console.error = original; }
-  assert.equal(output.length, 1); assert.ok(output[0].includes("logPersistenceFailed")); assert.equal(output[0].includes('"secret"'), false);
+  assert.equal(output.length, 1);
+  const entry = JSON.parse(output[0]);
+  assert.equal(entry.level, "error");
+  assert.equal(entry.correlationId, "diagnostic-id");
+  assert.equal(entry.message, "failed");
+  assert.ok(entry.timestamp);
+  assert.equal(output[0].includes('"secret"'), false);
+});
+
+test("a failing console sink does not fail the operation", () => {
+  const original = console.error;
+  console.error = () => { throw new Error("sink unavailable"); };
+  try { assert.doesNotThrow(() => loggerAdapter.error({ message: "failed" })); }
+  finally { console.error = original; }
 });
 test("model allowlist is exactly Jev and Qwen; missing authentication fails explicitly", async () => {
   assert.deepEqual(Object.values(MODELS), ["typesafe-ai/jev-1.14.0", "alibaba/qwen3-next-80b-a3b-instruct"]);

@@ -1,7 +1,5 @@
 import type { LoggerAdapter } from "@gotch/nextsignal";
 import type { LogEntry } from "@gotch/nextsignal";
-import { nextsignalLogs } from "@/nextsignal/db/schema";
-import { getDb } from "@/nextsignal/services/database";
 import { sanitize } from "@/nextsignal/observability/sanitize";
 
 export const loggerAdapter: LoggerAdapter = {
@@ -21,24 +19,16 @@ export const loggerAdapter: LoggerAdapter = {
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
-async function writeLog(level: LogLevel, entry: LogEntry) {
-  const safe = sanitize(entry) as LogEntry;
+function writeLog(level: LogLevel, entry: LogEntry) {
+  // Vercel captures stdout/stderr without a database round trip. Do not start
+  // untracked persistence promises here: serverless instances can stop at response end.
   try {
-    const db = await getDb();
-    await db.insert(nextsignalLogs).values({
-      id: crypto.randomUUID(),
+    console[level](JSON.stringify({
+      ...sanitize(entry) as LogEntry,
       level,
-      message: safe.message,
-      process: safe.process ?? null,
-      correlationId: safe.correlationId ?? null,
-      data: safe.data ?? null,
-      error: safe.error ?? null
-    });
-  } catch (error) {
-    try {
-      console.error(JSON.stringify({ level, ...safe, logPersistenceFailed: true, loggingError: sanitize(error) }));
-    } catch {
-      // A failing log sink must not fail the shopping operation.
-    }
+      timestamp: new Date().toISOString()
+    }));
+  } catch {
+    // A failing log sink must not fail the operation.
   }
 }

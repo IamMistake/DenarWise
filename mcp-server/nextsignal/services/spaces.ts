@@ -1,7 +1,8 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { homeShoppingItems, spaceMembersTable, spacesTable, homeTodos, homeUsers } from "@/nextsignal/db/schema";
-import type { Space, SpaceMember } from "@/nextsignal/domain/home";
+import type { Space, SpaceMember, ShoppingItem } from "@/nextsignal/domain/home";
 import { getDb } from "@/nextsignal/services/database";
+import { mapShoppingItem } from "@/nextsignal/services/shopping";
 
 export type SpaceSummary = Space & {
   role: SpaceMember["role"];
@@ -13,17 +14,21 @@ export type SpaceDetails = SpaceSummary & {
   members: SpaceMember[];
 };
 
+export type SpaceDashboard = SpaceDetails & {
+  items: ShoppingItem[];
+};
+
 export type LeaveSpaceResult = {
   spaceId: string;
   remainingMemberCount: number;
   deletedSpace: boolean;
 };
 
-export const spacesService = {
+export function createSpacesService(database = getDb) { return {
   async create(input: { userId: string; name: string }): Promise<SpaceDetails> {
-    const db = await getDb();
+    const db = await database();
     const id = crypto.randomUUID();
-    const inviteCode = await createUniqueInviteCode();
+    const inviteCode = await createUniqueInviteCode(database);
     const name = input.name.trim();
 
     const [space] = await db
@@ -46,7 +51,7 @@ export const spacesService = {
   },
 
   async joinByCode(input: { userId: string; code: string }): Promise<SpaceDetails | null> {
-    const db = await getDb();
+    const db = await database();
     const code = normalizeInviteCode(input.code);
     const [space] = await db
       .select()
@@ -69,7 +74,7 @@ export const spacesService = {
   },
 
   async listForUser(userId: string): Promise<SpaceSummary[]> {
-    const db = await getDb();
+    const db = await database();
     const rows = await db
       .select({
         space: spacesTable,
@@ -91,21 +96,61 @@ export const spacesService = {
     }));
   },
 
-  async getDetails(userId: string, spaceId: string): Promise<SpaceDetails> {
+  async listDashboard(userId: string): Promise<SpaceDashboard[]> {
+    // Only IDs selected through this user's memberships may reach these reads.
+    // The dashboard needs stored items, never a catalog/AI price refresh.
     const spaces = await this.listForUser(userId);
-    const space = spaces.find((item) => item.id === spaceId);
-    if (!space) {
+    if (!spaces.length) return [];
+    const db = await database();
+    const spaceIds = spaces.map((space) => space.id);
+    const [memberRows, itemRows] = await Promise.all([
+      db.select({ member: spaceMembersTable, user: homeUsers })
+        .from(spaceMembersTable)
+        .innerJoin(homeUsers, eq(homeUsers.id, spaceMembersTable.userId))
+        .where(inArray(spaceMembersTable.spaceId, spaceIds))
+        .orderBy(asc(spaceMembersTable.joinedAt)),
+      db.select().from(homeShoppingItems)
+        .where(inArray(homeShoppingItems.spaceId, spaceIds))
+        .orderBy(asc(homeShoppingItems.createdAt))
+    ]);
+    const members = new Map<string, SpaceMember[]>();
+    const items = new Map<string, ShoppingItem[]>();
+    for (const row of memberRows) {
+      const group = members.get(row.member.spaceId) ?? [];
+      group.push(mapSpaceMember(row.member, row.user));
+      members.set(row.member.spaceId, group);
+    }
+    for (const row of itemRows) {
+      const group = items.get(row.spaceId) ?? [];
+      group.push(mapShoppingItem(row));
+      items.set(row.spaceId, group);
+    }
+    return spaces.map((space) => ({ ...space, members: members.get(space.id) ?? [], items: items.get(space.id) ?? [] }));
+  },
+
+  async getDetails(userId: string, spaceId: string): Promise<SpaceDetails> {
+    const db = await database();
+    const [row] = await db.select({ space: spacesTable, member: spaceMembersTable })
+      .from(spaceMembersTable)
+      .innerJoin(spacesTable, eq(spacesTable.id, spaceMembersTable.spaceId))
+      .where(and(eq(spaceMembersTable.userId, userId), eq(spaceMembersTable.spaceId, spaceId)))
+      .limit(1);
+    if (!row) {
       throw new Error("Space membership disappeared while loading details.");
     }
 
+    const members = await this.listMembers(spaceId);
     return {
-      ...space,
-      members: await this.listMembers(spaceId)
+      ...mapSpace(row.space),
+      role: row.member.role,
+      memberCount: members.length,
+      isActive: true,
+      members
     };
   },
 
   async listMembers(spaceId: string): Promise<SpaceMember[]> {
-    const db = await getDb();
+    const db = await database();
     const rows = await db
       .select({
         member: spaceMembersTable,
@@ -125,7 +170,7 @@ export const spacesService = {
   },
 
   async leave(input: { userId: string; spaceId: string }): Promise<LeaveSpaceResult> {
-    const db = await getDb();
+    const db = await database();
 
     return db.transaction(async (tx) => {
       await tx
@@ -180,7 +225,7 @@ export const spacesService = {
   },
 
   async getMembership(userId: string, spaceId: string): Promise<SpaceMember | null> {
-    const db = await getDb();
+    const db = await database();
     const [row] = await db
       .select({
         member: spaceMembersTable,
@@ -195,23 +240,21 @@ export const spacesService = {
   },
 
   async countMembers(spaceIds: string[]): Promise<Map<string, number>> {
-    const db = await getDb();
+    if (!spaceIds.length) return new Map();
+    const db = await database();
     const rows = await db
-      .select()
+      .select({ spaceId: spaceMembersTable.spaceId, memberCount: count() })
       .from(spaceMembersTable)
-      .where(inArray(spaceMembersTable.spaceId, spaceIds));
-    const counts = new Map<string, number>();
-
-    for (const row of rows) {
-      counts.set(row.spaceId, (counts.get(row.spaceId) ?? 0) + 1);
-    }
-
-    return counts;
+      .where(inArray(spaceMembersTable.spaceId, spaceIds))
+      .groupBy(spaceMembersTable.spaceId);
+    return new Map(rows.map((row) => [row.spaceId, row.memberCount]));
   }
-};
+}; }
 
-async function createUniqueInviteCode() {
-  const db = await getDb();
+export const spacesService = createSpacesService();
+
+async function createUniqueInviteCode(database: typeof getDb) {
+  const db = await database();
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = generateInviteCode();

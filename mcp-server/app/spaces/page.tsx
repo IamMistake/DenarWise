@@ -1,17 +1,15 @@
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { SpacesView, type SpaceCardView } from "./spaces-view";
+import { SpacesView } from "./spaces-view";
 import { app } from "@/nextsignal/app";
-import type { SpaceMember, ShoppingItem } from "@/nextsignal/domain/home";
 import type {
-  ShoppingListItemsInput,
   SpacesCreateInput,
   SpacesJoinInput,
   SpacesLeaveInput,
-  SpacesListInput,
-  SpacesListMembersInput
+  SpacesListInput
 } from "@/nextsignal/schemas";
-import type { SpaceSummary } from "@/nextsignal/services/spaces";
+import type { SpaceDashboard } from "@/nextsignal/services/spaces";
 import { createWebSessionRequest } from "@/nextsignal/workos/request-context";
 import {
   decryptWebSession,
@@ -32,11 +30,11 @@ export default async function SpacesPage({ searchParams }: SpacesPageProps) {
   const message = readParam(params, "message");
   const displayName = [session.user.firstName, session.user.lastName].filter(Boolean).join(" ") || session.user.email;
 
-  const spacesResult = await app.dispatch<SpacesListInput, SpaceSummary[]>("spaces.list", {}, {
+  const spacesResult = await app.dispatch<SpacesListInput, SpaceDashboard[]>("spaces.dashboard", {}, {
     runtime: "api",
     request: createWebSessionRequest(session, "nextsignal://web/spaces")
   });
-  const spaces = spacesResult.ok ? await loadSpaceCards(session, spacesResult.data ?? []) : [];
+  const spaces = spacesResult.ok ? spacesResult.data ?? [] : [];
   const toast = error
     ? { tone: "error" as const, message: error }
     : message
@@ -60,29 +58,6 @@ export default async function SpacesPage({ searchParams }: SpacesPageProps) {
   );
 }
 
-async function loadSpaceCards(session: WebAuthSession, spaces: SpaceSummary[]): Promise<SpaceCardView[]> {
-  return Promise.all(spaces.map(async (space) => {
-    const [members, items] = await Promise.all([
-      app.dispatch<SpacesListMembersInput, SpaceMember[]>("spaces.listMembers", { spaceId: space.id }, {
-        runtime: "api",
-        request: createWebSessionRequest(session, `nextsignal://web/spaces/${space.id}/members`)
-      }),
-      app.dispatch<ShoppingListItemsInput, ShoppingItem[]>("shopping.listItems", { spaceId: space.id }, {
-        runtime: "api",
-        request: createWebSessionRequest(session, `nextsignal://web/spaces/${space.id}/items`)
-      })
-    ]);
-
-    return {
-      ...space,
-      members: members.ok ? members.data ?? [] : [],
-      membersError: members.ok ? undefined : readResultError(members),
-      items: items.ok ? items.data ?? [] : [],
-      itemsError: items.ok ? undefined : readResultError(items)
-    };
-  }));
-}
-
 async function createSpaceAction(formData: FormData) {
   "use server";
   const session = await requirePageSession();
@@ -95,6 +70,7 @@ async function createSpaceAction(formData: FormData) {
   });
 
   if (!result.ok) redirect(`/spaces?error=${encodeURIComponent(readResultError(result))}`);
+  revalidatePath("/spaces");
   redirect("/spaces?message=Space%20created");
 }
 
@@ -110,6 +86,7 @@ async function joinSpaceAction(formData: FormData) {
   });
 
   if (!result.ok) redirect(`/spaces?error=${encodeURIComponent(readResultError(result))}`);
+  revalidatePath("/spaces");
   redirect("/spaces?message=Space%20joined");
 }
 
@@ -125,6 +102,7 @@ async function leaveSpaceAction(formData: FormData) {
   });
 
   if (!result.ok) redirect(`/spaces?error=${encodeURIComponent(readResultError(result))}`);
+  revalidatePath("/spaces");
   redirect("/spaces?message=Space%20left");
 }
 
