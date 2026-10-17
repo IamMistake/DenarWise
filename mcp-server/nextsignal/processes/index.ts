@@ -1,3 +1,4 @@
+import { shoppingSearchProductsApi } from "@/nextsignal/processes/api/shopping/search-products";
 import { healthApi } from "@/nextsignal/processes/api/health";
 import { pruneLogsApi } from "@/nextsignal/processes/api/logs/prune";
 import { marketplaceNotificationSubscribeApi } from "@/nextsignal/processes/api/marketplace-notifications/subscribe";
@@ -30,6 +31,7 @@ export const processes = [
   marketplaceNotificationSubscribeApi,
   shoppingListItemsApi,
   shoppingPreviewAddApi,
+  shoppingSearchProductsApi,
   spacesListMembersApi,
   todoListApi,
   healthBusiness,

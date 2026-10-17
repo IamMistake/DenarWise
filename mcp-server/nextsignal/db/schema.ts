@@ -1,4 +1,6 @@
 import { index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { catalogProducts } from "./catalog";
+export * from "./catalog";
 
 export const homeUsers = pgTable(
   "home_users",
@@ -52,6 +54,9 @@ export const homeShoppingItems = pgTable(
     name: text("name").notNull(),
     quantity: text("quantity").notNull(),
     store: text("store"),
+    productId: text("product_id").references(() => catalogProducts.id),
+    originalQuery: text("original_query"),
+    keywords: jsonb("keywords").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
   },
   (table) => [

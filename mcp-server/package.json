@@ -15,13 +15,19 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "worker": "tsx worker/index.ts"
+    "worker": "tsx worker/index.ts",
+    "test": "tsx --test tests/*.test.ts tests/*.test.tsx",
+    "benchmark:matching": "tsx scripts/benchmark-matching.ts",
+    "preview:shopping": "npm run mcp-ui:build && tsx scripts/preview-shopping-ui.ts",
+    "pretest": "npm run mcp-ui:build"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "4.0.116",
     "@gotch/nextsignal": "alpha",
     "@modelcontextprotocol/ext-apps": "1.3.2",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@workos-inc/node": "^9.2.0",
+    "ai": "7.0.143",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.3",
     "mcp-handler": "^1.1.0",
@@ -33,6 +39,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/node": "^24.0.0",
     "@types/nodemailer": "^8.0.0",
@@ -44,5 +51,8 @@
     "tailwindcss": "^4.3.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

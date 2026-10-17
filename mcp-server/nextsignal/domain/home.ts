@@ -1,3 +1,5 @@
+import type { MatchResult, Recommendation } from "@/nextsignal/catalog/types";
+
 export type SpaceMemberRole = "owner" | "member";
 
 export type HomeUser = {
@@ -39,6 +41,12 @@ export type ShoppingItem = {
   quantity: string;
   store: string | null;
   createdAt: string;
+  productId?: string | null;
+  originalQuery?: string;
+  keywords?: string[];
+  requestedStore?: string | null;
+  matching?: MatchResult;
+  recommendation?: Recommendation;
 };
 
 export type TodoItem = {

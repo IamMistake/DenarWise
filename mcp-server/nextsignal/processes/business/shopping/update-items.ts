@@ -54,5 +54,7 @@ async function shoppingUpdateItemsHandle(ctx: ProcessContext<AppServices>, input
     }
   });
 
-  return value({ spaceId: targetSpaceId, items });
+  const updatedIds = new Set(items.map((item) => item.id));
+  const enriched = await ctx.services.shopping.listItems({ spaceId: targetSpaceId });
+  return value({ spaceId: targetSpaceId, items: enriched.filter((item) => updatedIds.has(item.id)) });
 }

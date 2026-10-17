@@ -1,6 +1,6 @@
 // Design-only price matching shapes and SAMPLE data.
-// The matching backend does not exist yet: nothing here is real pricing.
-// The same module feeds the landing page, the /spaces preview and the in-chat widget.
+// These illustrative prices are not used by the catalog backend.
+// Used by marketing and development previews; live matching uses catalog/types.ts.
 
 export const MARKETS = ["Kam", "Ramstore", "Stokomak", "Spar", "Zito", "Vero", "Zur", "Reptil", "Dim"] as const;
 

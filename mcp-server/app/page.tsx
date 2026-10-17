@@ -16,7 +16,7 @@ import {
   webSessionCookieName
 } from "@/nextsignal/workos/web-auth";
 
-const MCP_URL = "https://homespace.betta.chat/api/mcp";
+const MCP_URL = "https://denarwise.betta.chat/api/mcp";
 
 export default async function HomePage() {
   const session = await getPageSession();

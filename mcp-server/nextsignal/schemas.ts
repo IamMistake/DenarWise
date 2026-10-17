@@ -40,20 +40,31 @@ export const shoppingListItemsInputSchema = z.object({
   store: z.string().min(1).optional()
 });
 
-export const shoppingAddItemSchema = z.object({
-  name: z.string().min(1),
-  quantity: z.string().min(1).optional(),
-  store: z.string().min(1).optional()
-});
-
-export const shoppingAddItemInputSchema = shoppingAddItemSchema.extend({
+export const packageQuantitySchema = z.union([z.number().int().positive().max(10000), z.string().trim().regex(/^[1-9]\d*$/).refine((value) => Number(value) <= 10000)]);
+const shoppingFields = {
+  name: z.string().trim().min(1).max(500).optional(),
+  query: z.string().trim().min(1).max(500).optional(),
+  keywords: z.array(z.string().trim().min(1).max(100)).max(4).optional(),
+  quantity: packageQuantitySchema.optional(),
+  store: z.string().trim().min(1).max(120).optional(),
+  productId: z.string().min(1).nullable().optional()
+};
+export const shoppingAddItemSchema = z.object(shoppingFields).refine((item) => Boolean(item.query || item.name), { message: "Provide query or name." });
+export const shoppingAddItemInputSchema = z.object({
+  ...shoppingFields,
   spaceId: spaceIdSchema,
-  name: z.string().min(1).optional(),
-  items: z.array(shoppingAddItemSchema).min(1).optional()
-}).refine(
-  (input) => Boolean(input.name || input.items?.length),
-  { message: "Provide either a single item with `name`, or bulk items with `items`." }
-);
+  confirmationId: z.string().uuid().optional(),
+  items: z.array(shoppingAddItemSchema).min(1).max(20).optional()
+}).refine((input) => Boolean(input.query || input.name || input.items?.length), { message: "Provide a query/name or items." });
+
+export const shoppingSearchProductsInputSchema = z.object({
+  spaceId: spaceIdSchema,
+  itemId: z.string().min(1),
+  query: z.string().trim().min(1).max(500),
+  keywords: z.array(z.string().trim().min(1).max(100)).max(4).optional(),
+  store: z.string().trim().max(120).optional()
+});
+export type ShoppingSearchProductsInput = z.infer<typeof shoppingSearchProductsInputSchema>;
 
 export const shoppingClearItemsInputSchema = z.object({
   spaceId: spaceIdSchema,
@@ -68,11 +79,12 @@ export const shoppingClearItemsInputSchema = z.object({
 
 export const shoppingUpdateItemSchema = z.object({
   id: z.string().trim().min(1),
-  quantity: z.string().trim().min(1).max(40).optional(),
-  store: z.string().trim().max(120).nullable().optional()
+  quantity: packageQuantitySchema.optional(),
+  store: z.string().trim().max(120).nullable().optional(),
+  productId: z.string().min(1).nullable().optional()
 }).refine(
-  (input) => input.quantity !== undefined || input.store !== undefined,
-  { message: "Provide a quantity or store update." }
+  (input) => input.quantity !== undefined || input.store !== undefined || input.productId !== undefined,
+  { message: "Provide a product, quantity or store update." }
 );
 
 export const shoppingUpdateItemsInputSchema = z.object({

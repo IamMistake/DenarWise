@@ -1,4 +1,4 @@
-import { businessProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
+import { businessProcess, fail, forwardFault, notFound, requireUser, validateWith, value } from "@gotch/nextsignal";
 import type { ProcessContext } from "@gotch/nextsignal";
 import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
@@ -6,7 +6,7 @@ import { shoppingAddItemInputSchema, type ShoppingAddItemInput } from "@/nextsig
 import type { ActiveSpace, HomeChangeNotification, ShoppingItem } from "@/nextsignal/domain/home";
 
 export type ShoppingAddItemOutput = {
-  item: ShoppingItem;
+  item: ShoppingItem | undefined;
   addedItems: ShoppingItem[];
   items: ShoppingItem[];
 };
@@ -28,7 +28,8 @@ async function shoppingAddItemHandle(ctx: ProcessContext<AppServices>, input: Sh
   const spaceResult = await requireSpace(ctx, input.spaceId);
   if (!spaceResult.ok) return forwardFault(spaceResult);
   const activeSpace = spaceResult.data!;
-  const itemsToAdd = getShoppingItemsToAdd(input);
+  const itemsToAdd = await ctx.services.shopping.resolveItems(input);
+  if (!itemsToAdd) return notFound("The selected product is no longer available. Review the item again.");
 
   await ctx.logger.info({
     message: "Adding shopping items.",
@@ -41,17 +42,21 @@ async function shoppingAddItemHandle(ctx: ProcessContext<AppServices>, input: Sh
     }
   });
 
-  const addedItems = await ctx.services.shopping.addItems({
+  const confirmation = await ctx.services.shopping.addItems({
     spaceId: input.spaceId,
-    items: itemsToAdd
+    items: itemsToAdd,
+    userId: activeSpace.user.id,
+    confirmationId: input.confirmationId ?? crypto.randomUUID()
   });
+  if (!confirmation) return fail("This confirmation was already used for a different selection. Review the items again.");
+  const { addedItems, replayed } = confirmation;
   const items = await ctx.services.shopping.listItems({ spaceId: input.spaceId });
   const recipients = await ctx.services.spaces.listNotificationMembers({
     spaceId: input.spaceId,
     excludeUserId: activeSpace.user.id
   });
 
-  ctx.services.email.sendSpaceChangeNotificationAsync(
+  if (!replayed) ctx.services.email.sendSpaceChangeNotificationAsync(
     createShoppingAddNotification(activeSpace, { item: addedItems[0], addedItems, items }),
     recipients,
     ctx.logger
@@ -68,7 +73,9 @@ async function shoppingAddItemHandle(ctx: ProcessContext<AppServices>, input: Sh
     }
   });
 
-  return value({ item: addedItems[0], addedItems, items });
+  const addedIds = new Set(addedItems.map((item) => item.id));
+  const enrichedAddedItems = items.filter((item) => addedIds.has(item.id));
+  return value({ item: enrichedAddedItems[0], addedItems: enrichedAddedItems, items });
 }
 
 function createShoppingAddNotification(
@@ -83,7 +90,7 @@ function createShoppingAddNotification(
     spaceName: activeSpace.space.name,
     changedBy: activeSpace.user.displayName,
     summary: count === 1
-      ? `${activeSpace.user.displayName} added ${data.item.name} to the shopping list.`
+      ? `${activeSpace.user.displayName} added ${data.item?.name ?? "an item"} to the shopping list.`
       : `${activeSpace.user.displayName} added ${count} items to the shopping list.`,
     details: data.addedItems.map((item) => `${item.name} x ${item.quantity}${item.store ? `, ${item.store}` : ""}`),
     snapshot: {
@@ -91,14 +98,4 @@ function createShoppingAddNotification(
     },
     changedAt: new Date().toISOString()
   };
-}
-
-function getShoppingItemsToAdd(input: ShoppingAddItemInput) {
-  if (input.items?.length) return input.items;
-
-  return [{
-    name: input.name!,
-    quantity: input.quantity,
-    store: input.store
-  }];
 }

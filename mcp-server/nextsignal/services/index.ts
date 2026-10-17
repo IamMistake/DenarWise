@@ -1,3 +1,4 @@
+import { matchingService } from "@/nextsignal/catalog/matching";
 import { emailService } from "@/nextsignal/services/email";
 import { logsService } from "@/nextsignal/services/logs";
 import { marketplaceNotificationsService } from "@/nextsignal/services/marketplace-notifications";
@@ -29,6 +30,7 @@ export const services = {
     }
   },
   shopping: shoppingService,
+  matching: matchingService,
   spaces: spacesService,
   todos: todosService,
   users: usersService,

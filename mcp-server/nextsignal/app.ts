@@ -1,3 +1,5 @@
+import { observeProcess } from "@/nextsignal/observability/process";
+import type { ProcessDefinition } from "@gotch/nextsignal";
 import { createNextSignalApp } from "@gotch/nextsignal";
 import { adapters } from "@/nextsignal/adapters";
 import { config } from "@/nextsignal/config";
@@ -8,7 +10,7 @@ import { services } from "@/nextsignal/services";
 // Keep databases, providers, and infrastructure details behind `services`
 // and `adapters`, then keep process files focused on lifecycle and flow.
 export const app = createNextSignalApp({
-  processes,
+  processes: processes.map((process) => observeProcess(process as unknown as ProcessDefinition<unknown, unknown, typeof services>)),
   services,
   config,
   adapters

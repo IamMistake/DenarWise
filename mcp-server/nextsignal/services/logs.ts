@@ -1,5 +1,5 @@
 import { lt } from "drizzle-orm";
-import { nextsignalLogs } from "@/nextsignal/db/schema";
+import { catalogCache, nextsignalLogs } from "@/nextsignal/db/schema";
 import { getDb } from "@/nextsignal/services/database";
 
 export type PruneLogsInput = {
@@ -9,6 +9,7 @@ export type PruneLogsInput = {
 export type PruneLogsResult = {
   cutoff: string;
   deletedCount: number;
+  expiredCacheCount: number;
 };
 
 export const logsService = {
@@ -19,10 +20,12 @@ export const logsService = {
       .delete(nextsignalLogs)
       .where(lt(nextsignalLogs.createdAt, cutoff))
       .returning({ id: nextsignalLogs.id });
+    const expired = await db.delete(catalogCache).where(lt(catalogCache.expiresAt, new Date())).returning({ key: catalogCache.key });
 
     return {
       cutoff: cutoff.toISOString(),
-      deletedCount: deleted.length
+      deletedCount: deleted.length,
+      expiredCacheCount: expired.length
     };
   }
 };

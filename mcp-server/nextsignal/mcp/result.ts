@@ -6,14 +6,14 @@ export function toMcpToolResult(result: Result<unknown>): CallToolResult {
     return {
       isError: true,
       structuredContent: {
-        errors: result.errors,
+        errors: result.meta.kind === "system" ? [{ message: "The operation failed. See the diagnostic reference." }] : result.errors,
         meta: result.meta
       },
       content: [
         {
           type: "text",
           text: result.errors
-            .map((error) => error.publicMessage ?? error.message)
+            .map((error) => result.meta.kind === "system" ? `The operation failed. Reference: ${result.meta.correlationId ?? "unknown"}.` : error.publicMessage ?? error.message)
             .join("\n")
         }
       ]

@@ -1,57 +1,29 @@
-import { apiProcess, forwardFault, requireUser, validateWith, value } from "@gotch/nextsignal";
+import { apiProcess, forwardFault, requireUser, validateWith, value, type ProcessContext } from "@gotch/nextsignal";
 import { requireSpace } from "@/nextsignal/processes/business/context";
 import type { AppServices } from "@/nextsignal/services";
 import { shoppingAddItemInputSchema, type ShoppingAddItemInput } from "@/nextsignal/schemas";
 import type { ShoppingItem } from "@/nextsignal/domain/home";
+import { keywordsFor } from "@/nextsignal/catalog/normalize";
 
-export type ShoppingPreviewAddOutput = {
-  proposedItems: ShoppingItem[];
-  items: ShoppingItem[];
-};
-
+export type ShoppingPreviewAddOutput = { proposedItems: ShoppingItem[]; items: ShoppingItem[]; confirmationId: string };
 export const shoppingPreviewAddApi = apiProcess<ShoppingAddItemInput, ShoppingPreviewAddOutput, AppServices>({
   name: "shopping.previewAdd",
-  metadata: {
-    description: "Prepares shopping items for review without persisting them.",
-    tags: ["shopping", "api", "ui"],
-    owner: "home",
-    version: "0.1.0"
-  },
-  auth: requireUser(),
-  validate: validateWith(shoppingAddItemInputSchema),
-  async handle(ctx, input) {
-    const spaceResult = await requireSpace(ctx, input.spaceId);
-    if (!spaceResult.ok) return forwardFault(spaceResult);
-
-    const items = await ctx.services.shopping.listItems({ spaceId: input.spaceId });
-    const proposedItems = getProposedItems(input);
-
-    await ctx.logger.info({
-      message: "Prepared shopping items for UI review.",
-      process: ctx.metadata.processName,
-      correlationId: ctx.metadata.correlationId,
-      data: {
-        itemCount: proposedItems.length,
-        spaceId: input.spaceId
-      }
-    });
-
-    return value({ proposedItems, items });
-  }
+  metadata: { description: "Matches requested products for review without adding shopping items.", tags: ["shopping", "api", "ui"], owner: "home", version: "0.2.0" },
+  auth: requireUser(), validate: validateWith(shoppingAddItemInputSchema), handle: previewHandle
 });
-
-function getProposedItems(input: ShoppingAddItemInput): ShoppingItem[] {
-  const items = input.items?.length
-    ? input.items
-    : [{ name: input.name!, quantity: input.quantity, store: input.store }];
-  const createdAt = new Date().toISOString();
-
-  return items.map((item) => ({
-    id: `draft-${crypto.randomUUID()}`,
-    spaceId: input.spaceId,
-    name: item.name.trim(),
-    quantity: item.quantity?.trim() || "1",
-    store: item.store?.trim() || null,
-    createdAt
+async function previewHandle(ctx: ProcessContext<AppServices>, input: ShoppingAddItemInput) {
+  const space = await requireSpace(ctx, input.spaceId);
+  if (!space.ok) return forwardFault(space);
+  const requested = (input.items?.length ? input.items : [input]).map((item) => ({
+    query: (item.query ?? item.name)!.trim(), quantity: Number(item.quantity ?? 1),
+    keywords: keywordsFor((item.query ?? item.name)!, item.keywords), store: item.store
   }));
+  const matches = await ctx.services.matching.match(requested);
+  const createdAt = new Date().toISOString();
+  const proposedItems: ShoppingItem[] = requested.map((item, index) => ({
+    id: `draft-${crypto.randomUUID()}`, spaceId: input.spaceId, name: item.query, originalQuery: item.query,
+    keywords: item.keywords, quantity: String(item.quantity), store: item.store ?? null, requestedStore: item.store ?? null,
+    productId: matches[index].selectedProductId, matching: matches[index], createdAt
+  }));
+  return value({ proposedItems, items: await ctx.services.shopping.storedItems(input.spaceId), confirmationId: crypto.randomUUID() });
 }

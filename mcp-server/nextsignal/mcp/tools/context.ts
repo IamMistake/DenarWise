@@ -1,3 +1,4 @@
+import { correlationId } from "@/nextsignal/observability/context";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { App } from "@/nextsignal/app";
 
@@ -13,6 +14,7 @@ export async function dispatchMcpTool<TInput>(
 ) {
   return app.dispatch<TInput>(processName, input, {
     runtime: "api",
+    correlationId: correlationId(),
     request: {
       method: "MCP",
       url: "mcp://tool",

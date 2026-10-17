@@ -2,50 +2,43 @@ import type { LoggerAdapter } from "@gotch/nextsignal";
 import type { LogEntry } from "@gotch/nextsignal";
 import { nextsignalLogs } from "@/nextsignal/db/schema";
 import { getDb } from "@/nextsignal/services/database";
+import { sanitize } from "@/nextsignal/observability/sanitize";
 
 export const loggerAdapter: LoggerAdapter = {
   debug(entry) {
-    void writeLog("debug", entry);
+    return writeLog("debug", entry);
   },
   info(entry) {
-    void writeLog("info", entry);
+    return writeLog("info", entry);
   },
   warn(entry) {
-    void writeLog("warn", entry);
+    return writeLog("warn", entry);
   },
   error(entry) {
-    void writeLog("error", entry);
+    return writeLog("error", entry);
   }
 };
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 async function writeLog(level: LogLevel, entry: LogEntry) {
+  const safe = sanitize(entry) as LogEntry;
   try {
     const db = await getDb();
     await db.insert(nextsignalLogs).values({
       id: crypto.randomUUID(),
       level,
-      message: entry.message,
-      process: entry.process ?? null,
-      correlationId: entry.correlationId ?? null,
-      data: entry.data ?? null,
-      error: serializeError(entry.error) ?? null
+      message: safe.message,
+      process: safe.process ?? null,
+      correlationId: safe.correlationId ?? null,
+      data: safe.data ?? null,
+      error: safe.error ?? null
     });
-  } catch {
-    // Logging must not break application work.
+  } catch (error) {
+    try {
+      console.error(JSON.stringify({ level, ...safe, logPersistenceFailed: true, loggingError: sanitize(error) }));
+    } catch {
+      // A failing log sink must not fail the shopping operation.
+    }
   }
-}
-
-function serializeError(error: unknown): unknown {
-  if (!error) return undefined;
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    };
-  }
-
-  return error;
 }
