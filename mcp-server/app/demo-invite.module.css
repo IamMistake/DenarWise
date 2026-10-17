@@ -1,0 +1,13 @@
+.dialog { width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); margin: auto; padding: 36px; overflow-y: auto; border: 2px solid var(--color-ink); border-radius: var(--radius-card); background: var(--color-bg); color: var(--color-ink); box-shadow: 0 7px 0 var(--color-ink); }
+.dialog::backdrop { background: rgb(14 21 48 / 60%); backdrop-filter: blur(5px); }
+:global(body):has(.dialog[open]) { overflow: hidden; }
+.close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--color-ink); cursor: pointer; font-size: 26px; }
+.close:hover { background: var(--color-line); }
+.dialog .title { margin-top: 22px; font-size: clamp(28px, 5vw, 38px); line-height: 1.12; }
+.description { margin: 18px 0 0; color: var(--color-muted); font-size: 16px; line-height: 1.7; }
+.actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 26px; }
+.actions > a, .actions > button { min-height: 46px; padding-inline: 18px; font-size: 14px; }
+@media (max-width: 540px) {
+  .dialog { padding: 30px 24px; }
+  .actions { flex-direction: column; }
+}

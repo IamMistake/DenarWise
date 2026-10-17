@@ -3,6 +3,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { CopyButton } from "./copy-button";
+import { DemoInvite } from "./demo-invite";
 import { HeroStory } from "./hero-story";
 import { MarketChip } from "./market-logo";
 import { MarketplaceNotificationForm } from "./marketplace-notification-form";
@@ -28,6 +29,7 @@ export default async function HomePage() {
 
   return (
     <main className="hs">
+      <DemoInvite />
       <SiteNav links={[{ href: "#how", label: "How it works" }, { href: "#price", label: "Best price" }, { href: "#connect", label: "Connect" }]}>
         {displayName ? (
           <>
