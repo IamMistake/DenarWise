@@ -11,12 +11,12 @@ const slides = [
   },
   {
     src: "/images/mcp-carousel/add-shopping-items.jpg",
-    alt: "Claude preparing six drinks and seven bananas for a DenarWise shopping list",
+    alt: "Claude showing a DenarWise review of Bitolsko milk and Zito protein bread before adding them to the ISO shopping list",
     label: "Add a whole shopping list in one message."
   },
   {
     src: "/images/mcp-carousel/check-shopping-list.jpg",
-    alt: "Claude showing an interactive DenarWise shopping list with an item selected",
+    alt: "Claude showing the shared ISO shopping list in DenarWise with milk and protein bread",
     label: "Check what’s needed, then clear the basket."
   }
 ] as const;

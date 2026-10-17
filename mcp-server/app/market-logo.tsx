@@ -32,6 +32,7 @@ export function MarketLogo({ market, size = 28, maxWidth }: { market: string; si
       alt=""
       width={Math.round(width)}
       height={Math.round(height)}
+      style={{ width: Math.round(width), height: Math.round(height) }}
       aria-hidden="true"
     />
   );
